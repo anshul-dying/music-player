@@ -159,3 +159,28 @@ When you secure funding or revenue, migrate to AWS with **zero application code 
    - Keep on **Vercel** (standard industry practice even for funded startups) OR export static build to **Amazon S3 + Amazon CloudFront CDN**.
 5. **Secrets & Config:**
    - Store secrets in **AWS Secrets Manager** or **AWS Systems Manager Parameter Store**.
+
+---
+
+## 5. GitHub Actions CI/CD Pipeline
+
+The repository separates CI and CD into dedicated GitHub Actions workflows:
+
+- **Continuous Integration (`.github/workflows/ci.yml`):** Runs on push and pull requests targeting `main`.
+  - Enforces 300-line limits (`pnpm check:lines`)
+  - Type checking (`pnpm typecheck`)
+  - Linting (`pnpm lint`)
+  - Test suite execution (`pnpm test`)
+  - Workspace production build (`pnpm package:ext && pnpm build`)
+- **Continuous Deployment (`.github/workflows/cd.yml`):** Automatically triggered when the `CI` workflow completes successfully on `main` (also supports manual `workflow_dispatch`).
+  - SSHs into the Lightsail server and updates the production environment safely without downtime.
+
+### Required GitHub Secrets
+
+In **GitHub Repository Settings -> Secrets and variables -> Actions**, add:
+
+| Secret Name | Value | Required? |
+| --- | --- | --- |
+| `LIGHTSAIL_SSH_KEY` | Entire contents of `scripts/LightsailDefaultKey-ap-south-1.pem` (including `BEGIN`/`END` headers) | **Yes** |
+| `LIGHTSAIL_HOST` | Host IP or domain (defaults to `35.154.36.24`) | Optional |
+| `LIGHTSAIL_USER` | SSH user (defaults to `ubuntu`) | Optional |

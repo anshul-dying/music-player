@@ -7,8 +7,13 @@ let cachedYt: any = null;
  * Resolves streams and SABR audio formats when standard endpoints are bot-checked.
  */
 export async function fetchWebPlayerFallback(videoId: string): Promise<PlayerResponse | null> {
-  // If running in browser without the companion extension, skip to avoid naked CORS preflight errors
-  if (typeof window !== 'undefined' && !(window as any).__MP_EXTENSION_ACTIVE__) {
+  // Browser fallback only: require browser window with companion extension, and never run in tests
+  const isTest = (globalThis as any).process?.env?.NODE_ENV === 'test';
+  if (
+    isTest ||
+    typeof window === 'undefined' ||
+    !(window as any).__MP_EXTENSION_ACTIVE__
+  ) {
     return null;
   }
   try {

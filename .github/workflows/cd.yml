@@ -1,0 +1,63 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types:
+      - completed
+  workflow_dispatch:
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger remote deployment via SSH
+        env:
+          SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          HOST: ${{ secrets.LIGHTSAIL_HOST || '35.154.36.24' }}
+          USER: ${{ secrets.LIGHTSAIL_USER || 'ubuntu' }}
+        run: |
+          if [ -z "$SSH_KEY" ]; then
+            echo "::error::Secret LIGHTSAIL_SSH_KEY is not configured in repository secrets."
+            exit 1
+          fi
+
+          eval $(ssh-agent -s)
+          echo "$SSH_KEY" | tr -d '\r' | ssh-add -
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+
+          echo "==> Connecting to $USER@$HOST to deploy latest main..."
+          ssh "$USER@$HOST" 'bash -s' << 'EOF'
+            set -e
+            cd ~/music-player/music-player
+            echo "--> Discarding local build artifact diffs..."
+            git checkout -- . 2>/dev/null || true
+
+            echo "--> Pulling latest code..."
+            git pull origin main
+
+            echo "--> Installing dependencies if needed..."
+            pnpm install
+
+            echo "--> Packaging companion extension..."
+            pnpm package:ext
+
+            echo "--> Building packages sequentially (memory-safe)..."
+            pnpm --workspace-concurrency=1 build
+
+            echo "--> Restarting services with PM2..."
+            pm2 restart ecosystem.config.cjs
+
+            echo "--> Production status:"
+            pm2 status
+          EOF
+          echo "==> Deployment complete! Live at https://35.154.36.24.nip.io"
