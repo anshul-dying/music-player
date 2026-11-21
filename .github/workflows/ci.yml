@@ -40,13 +40,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Setup local environment file for testing
-        run: |
-          if [ -f .env.example ]; then
-            cp .env.example .env.local
-          else
-            touch .env.local
-          fi
+      - name: Setup test environment
+        run: touch .env.local
 
       - name: Enforce 300-line limits
         run: pnpm check:lines
