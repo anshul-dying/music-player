@@ -17,6 +17,35 @@ jobs:
   quality-gate:
     name: Quality Gate & Build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: mp
+          POSTGRES_PASSWORD: mp
+          POSTGRES_DB: musicplayer
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mp -d musicplayer"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://mp:mp@localhost:5432/musicplayer
+      REDIS_URL: redis://localhost:6379
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,6 +71,9 @@ jobs:
 
       - name: Setup test environment
         run: touch .env.local
+
+      - name: Run database migrations
+        run: pnpm db:migrate
 
       - name: Enforce 300-line limits
         run: pnpm check:lines
