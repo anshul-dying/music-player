@@ -2,20 +2,24 @@ import {
   HomeFeedData,
   MediaShelfData,
   MoodChipData,
-  NextRadioData,
   ShelfItemData,
   Track,
 } from '../types';
 import { parseTrackFromRenderer } from './parsers';
 import { parseShelfItem } from './shelfParsers';
 import { parseSearchResults } from './searchParsers';
+import { generateSyntheticShelves, type SyntheticShelfOptions } from './syntheticShelves';
+
+export { parseNextRadio } from './nextRadioParsers';
+export { generateSyntheticShelves, type SyntheticShelfOptions } from './syntheticShelves';
 
 /**
  * Parse YouTube Music Home feed browse response into chips, quick picks, and shelves
  */
-export function parseHomeFeed(data: any): HomeFeedData {
+export function parseHomeFeed(data: any, options?: SyntheticShelfOptions): HomeFeedData {
   if (!data || typeof data !== 'object') {
-    return { chips: [], quickPicks: [], shelves: [] };
+    const fallbackShelves = options ? generateSyntheticShelves([], options) : [];
+    return { chips: [], quickPicks: [], shelves: fallbackShelves };
   }
 
   // 1. Parse mood chips
@@ -51,22 +55,30 @@ export function parseHomeFeed(data: any): HomeFeedData {
   let quickPicks: Track[] = [];
 
   const processShelf = (shelfNode: any) => {
-    const header = shelfNode.header?.musicCarouselShelfBasicHeaderRenderer || shelfNode.header;
+    const header =
+      shelfNode.header?.musicCarouselShelfBasicHeaderRenderer ||
+      shelfNode.header?.musicHeaderRenderer ||
+      shelfNode.header?.gridHeaderRenderer ||
+      shelfNode.header?.musicCardShelfHeaderBasicRenderer ||
+      shelfNode.header;
+
     const title =
-      header?.title?.runs?.[0]?.text ||
+      header?.title?.runs?.map((r: any) => r.text).join('') ||
       header?.title?.simpleText ||
-      shelfNode.title?.runs?.[0]?.text ||
+      shelfNode.title?.runs?.map((r: any) => r.text).join('') ||
       shelfNode.title?.simpleText ||
       '';
 
     const subtitle =
-      header?.strapline?.runs?.[0]?.text ||
+      header?.strapline?.runs?.map((r: any) => r.text).join('') ||
       header?.strapline?.simpleText ||
-      shelfNode.strapline?.runs?.[0]?.text ||
-      shelfNode.subtitle?.runs?.[0]?.text ||
+      header?.subtitle?.runs?.map((r: any) => r.text).join('') ||
+      header?.subtitle?.simpleText ||
+      shelfNode.strapline?.runs?.map((r: any) => r.text).join('') ||
+      shelfNode.subtitle?.runs?.map((r: any) => r.text).join('') ||
       undefined;
 
-    const rawItems = shelfNode.contents || [];
+    const rawItems = shelfNode.contents || shelfNode.items || [];
     const shelfItems: ShelfItemData[] = [];
     const shelfTracks: Track[] = [];
 
@@ -112,8 +124,20 @@ export function parseHomeFeed(data: any): HomeFeedData {
       processShelf(node.musicCarouselShelfRenderer);
       return;
     }
+    if (node.musicImmersiveCarouselShelfRenderer) {
+      processShelf(node.musicImmersiveCarouselShelfRenderer);
+      return;
+    }
     if (node.musicShelfRenderer) {
       processShelf(node.musicShelfRenderer);
+      return;
+    }
+    if (node.musicCardShelfRenderer) {
+      processShelf(node.musicCardShelfRenderer);
+      return;
+    }
+    if (node.gridRenderer) {
+      processShelf(node.gridRenderer);
       return;
     }
 
@@ -152,125 +176,22 @@ export function parseHomeFeed(data: any): HomeFeedData {
     quickPicks = parseSearchResults(data);
   }
 
+  // 3. Enrich with synthetic personalized and contextual shelves if options are provided
+  const shouldEnrich =
+    Boolean(options?.enableSynthetic) ||
+    Boolean(options?.history?.length) ||
+    Boolean(options?.likedTracks?.length);
+
+  const enrichedShelves = shouldEnrich
+    ? generateSyntheticShelves(shelves, {
+        ...options,
+        fallbackSeedTracks: quickPicks,
+      })
+    : shelves;
+
   return {
     chips,
     quickPicks,
-    shelves,
+    shelves: enrichedShelves,
   };
-}
-
-/**
- * Parse YouTube Music Next response into Up Next queue and Related shelves
- */
-export function parseNextRadio(data: any): NextRadioData {
-  if (!data || typeof data !== 'object') {
-    return { queue: [], related: [] };
-  }
-
-  const queue: Track[] = [];
-  const seenQueueIds = new Set<string>();
-
-  const related: ShelfItemData[] = [];
-  const seenRelatedIds = new Set<string>();
-
-  // 1. Extract queue items from playlistPanelVideoRenderer
-  const findQueue = (node: any) => {
-    if (!node || typeof node !== 'object') return;
-
-    if (node.playlistPanelVideoRenderer) {
-      const track = parseTrackFromRenderer(node);
-      if (track && !seenQueueIds.has(track.videoId)) {
-        seenQueueIds.add(track.videoId);
-        queue.push(track);
-      }
-      return;
-    }
-
-    if (node.playlistPanelVideoWrapperRenderer) {
-      const primary = node.playlistPanelVideoWrapperRenderer.primaryRenderer;
-      if (primary) findQueue(primary);
-      return;
-    }
-
-    if (Array.isArray(node)) {
-      for (const child of node) findQueue(child);
-      return;
-    }
-
-    for (const key of Object.keys(node)) {
-      findQueue(node[key]);
-    }
-  };
-
-  const tabs =
-    data.contents?.singleColumnMusicWatchNextResultsRenderer?.tabbedRenderer
-      ?.watchNextTabbedResultsRenderer?.tabs;
-
-  if (Array.isArray(tabs) && tabs.length > 0) {
-    findQueue(tabs[0]);
-  } else {
-    findQueue(data);
-  }
-
-  // 2. Extract related items from Related tab or shelves in response
-  const processRelatedItem = (itemNode: any) => {
-    const item = parseShelfItem(itemNode);
-    if (item && !seenRelatedIds.has(item.id)) {
-      seenRelatedIds.add(item.id);
-      related.push(item);
-    }
-  };
-
-  const findRelated = (node: any) => {
-    if (!node || typeof node !== 'object') return;
-
-    if (node.musicTwoRowItemRenderer || node.musicResponsiveListItemRenderer) {
-      processRelatedItem(node);
-      return;
-    }
-
-    if (Array.isArray(node)) {
-      for (const child of node) findRelated(child);
-      return;
-    }
-
-    for (const key of Object.keys(node)) {
-      if (key === 'playlistPanelRenderer' || key === 'musicQueueRenderer') {
-        continue;
-      }
-      findRelated(node[key]);
-    }
-  };
-
-  if (Array.isArray(tabs)) {
-    const relatedTab =
-      tabs.find((t: any) => {
-        const title =
-          t.tabRenderer?.title?.runs?.[0]?.text ||
-          t.tabRenderer?.title?.simpleText ||
-          t.tabRenderer?.title;
-        return typeof title === 'string' && /related/i.test(title);
-      }) || tabs[2];
-
-    if (relatedTab) {
-      findRelated(relatedTab);
-    } else {
-      findRelated(data);
-    }
-  } else {
-    findRelated(data);
-  }
-
-  // Fallback: if queue is empty, try parseSearchResults
-  if (queue.length === 0) {
-    const fallbackTracks = parseSearchResults(data);
-    for (const t of fallbackTracks) {
-      if (!seenQueueIds.has(t.videoId)) {
-        seenQueueIds.add(t.videoId);
-        queue.push(t);
-      }
-    }
-  }
-
-  return { queue, related };
 }

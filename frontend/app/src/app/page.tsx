@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   AmbientAura,
   Flex,
@@ -15,7 +15,9 @@ import {
 import { usePlayerStore, type Track } from '../stores/playerStore';
 import { useLibraryStore } from '../stores/libraryStore';
 import { useYouTubeAuthStore } from '../stores/youtubeAuthStore';
-import { type MediaShelfData } from '@mp/player-core';
+import { toRecentlyPlayed } from '../stores/library/recentlyPlayed';
+import { getGuestLikes } from '../stores/library/guestStorage';
+import { type MediaShelfData, generateSyntheticShelves } from '@mp/player-core';
 import { HomeQuickPicks } from '../components/home/HomeQuickPicks';
 import { HomeShelves } from '../components/home/HomeShelves';
 
@@ -33,7 +35,14 @@ export default function HomePage() {
   } = usePlayerStore();
 
   const isYouTubeAuthenticated = useYouTubeAuthStore((s) => s.isYouTubeAuthenticated);
-  const { isLiked } = useLibraryStore();
+  const { isLiked, history, likedTracks } = useLibraryStore();
+
+  const userTracks = useMemo(() => {
+    const fromHistory = toRecentlyPlayed(history);
+    if (fromHistory.length > 0) return fromHistory;
+    if (likedTracks && likedTracks.length > 0) return likedTracks;
+    return typeof window !== 'undefined' ? getGuestLikes() : [];
+  }, [history, likedTracks]);
 
   const [moodChips, setMoodChips] = useState<MoodChipData[]>([]);
   const [activeMoodChipId, setActiveMoodChipId] = useState<string | null>(null);
@@ -46,7 +55,7 @@ export default function HomePage() {
     let isMounted = true;
     setIsLoadingFeed(true);
 
-    getHomeFeed()
+    getHomeFeed(undefined, { history: userTracks, likedTracks, enableSynthetic: true })
       .then((feed) => {
         if (!isMounted) return;
         if (feed.chips && feed.chips.length > 0) {
@@ -67,13 +76,31 @@ export default function HomePage() {
     };
   }, [getHomeFeed, isYouTubeAuthenticated, networkAdapterType]);
 
+  // Reactively enrich shelves if new tracks are played or liked
+  useEffect(() => {
+    if (shelves.length > 0 && userTracks.length > 0) {
+      setShelves((prev) =>
+        generateSyntheticShelves(prev, {
+          history: userTracks,
+          likedTracks,
+          fallbackSeedTracks: quickPicks,
+          enableSynthetic: true,
+        })
+      );
+    }
+  }, [userTracks, likedTracks]);
+
   const handleSelectMoodChip = async (chipId: string) => {
     const nextActive = activeMoodChipId === chipId ? null : chipId;
     setActiveMoodChipId(nextActive);
     setIsLoadingFeed(true);
 
     try {
-      const feed = await getHomeFeed(nextActive || undefined);
+      const feed = await getHomeFeed(nextActive || undefined, {
+        history: userTracks,
+        likedTracks,
+        enableSynthetic: true,
+      });
       setQuickPicks(feed.quickPicks || []);
       setShelves(feed.shelves || []);
     } catch (err) {

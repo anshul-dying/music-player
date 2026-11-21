@@ -55,7 +55,7 @@ export function HomeShelves({ shelves, onPlayTrack }: HomeShelvesProps) {
                   imageUrl={item.thumbnail || item.imageUrl}
                   aspect="square"
                   onPlay={() => {
-                    if (item.videoId) {
+                    if (item.type === 'song' && item.videoId) {
                       const trackItem: Track = {
                         id: item.videoId,
                         videoId: item.videoId,
@@ -67,6 +67,16 @@ export function HomeShelves({ shelves, onPlayTrack }: HomeShelvesProps) {
                       onPlayTrack(trackItem);
                     } else if (item.browseId) {
                       handleNavigateOrPlay(item);
+                    } else if (item.videoId) {
+                      const trackItem: Track = {
+                        id: item.videoId,
+                        videoId: item.videoId,
+                        title: item.title,
+                        artist: item.subtitle || '',
+                        duration: 0,
+                        thumbnail: item.thumbnail || (item as any).imageUrl,
+                      };
+                      onPlayTrack(trackItem);
                     }
                   }}
                   onClick={() => handleNavigateOrPlay(item)}

@@ -11,6 +11,7 @@ export * from './adapters/network';
 
 // InnerTube Client & Parsers
 export * from './innertube/client';
+export * from './innertube/syntheticShelves';
 
 // Client Walk & Verdict Cache
 export * from './walk/clientWalk';

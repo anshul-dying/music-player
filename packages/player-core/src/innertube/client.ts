@@ -15,7 +15,7 @@ import {
   InnerTubeClientOptions,
 } from './contexts';
 import { parseSearchResults } from './searchParsers';
-import { parseHomeFeed, parseNextRadio } from './feedParsers';
+import { parseHomeFeed, parseNextRadio, type SyntheticShelfOptions } from './feedParsers';
 import {
   parseAlbumDetails,
   parseArtistDetails,
@@ -130,10 +130,10 @@ export class InnerTubeClient {
   /**
    * Fetch YouTube Music Home feed (chips, quick picks, shelves)
    */
-  async getHomeFeed(moodParam?: string): Promise<HomeFeedData> {
+  async getHomeFeed(moodParam?: string, options?: SyntheticShelfOptions): Promise<HomeFeedData> {
     const browseId = 'FEmusic_home';
     const data = await this.browseAuthenticated(browseId, moodParam);
-    return this.parseHomeFeed(data);
+    return this.parseHomeFeed(data, options);
   }
 
   /**
@@ -267,7 +267,7 @@ export class InnerTubeClient {
     return requestLikeStatus(this.network, this.baseUrl, videoId, status, clientName);
   }
 
-  parseHomeFeed(data: any): HomeFeedData { return parseHomeFeed(data); }
+  parseHomeFeed(data: any, options?: SyntheticShelfOptions): HomeFeedData { return parseHomeFeed(data, options); }
   parseNextRadio(data: any): NextRadioData { return parseNextRadio(data); }
   parseSearchResults(data: any): Track[] { return parseSearchResults(data); }
   parseLikedVideos(data: any): Track[] { return parseLikedVideos(data); }

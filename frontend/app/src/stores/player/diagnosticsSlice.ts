@@ -8,6 +8,7 @@ import {
   ArtistDetails,
   AlbumDetails,
   RemotePlaylistDetails,
+  SyntheticShelfOptions,
 } from '@mp/player-core';
 import {
   type StoreSet,
@@ -102,14 +103,14 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
     };
   },
 
-  getHomeFeed: async (moodParam?: string): Promise<HomeFeedData> => {
+  getHomeFeed: async (moodParam?: string, options?: SyntheticShelfOptions): Promise<HomeFeedData> => {
     let engine = get().engine;
     if (!engine) {
       get().initialize();
       engine = getSharedEngine();
     }
     if (!engine) return { chips: [], quickPicks: [], shelves: [] };
-    return engine.getHomeFeed(moodParam);
+    return engine.getHomeFeed(moodParam, options);
   },
 
   getExploreFeed: async (): Promise<HomeFeedData> => {

@@ -10,6 +10,7 @@ import {
   ArtistDetails,
   AlbumDetails,
   RemotePlaylistDetails,
+  SyntheticShelfOptions,
 } from '@mp/player-core';
 import { type TrackData } from '@mp/dying';
 import { type LyricsResponse } from '@mp/api-contract';
@@ -102,7 +103,7 @@ export interface PlayerStoreState {
   search: (query: string) => Promise<Track[]>;
   setNetworkAdapterType: (type: NetworkAdapterType) => void;
   getDiagnosticInfo: () => DiagnosticInfo;
-  getHomeFeed: (moodParam?: string) => Promise<HomeFeedData>;
+  getHomeFeed: (moodParam?: string, options?: SyntheticShelfOptions) => Promise<HomeFeedData>;
   getExploreFeed: () => Promise<HomeFeedData>;
   getNextRadio: (videoId: string, playlistId?: string) => Promise<NextRadioData>;
   getArtist: (browseId: string) => Promise<ArtistDetails>;
