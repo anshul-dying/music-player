@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=../../.env.local src/server.ts",
-    "start": "tsx --env-file=../../.env.local src/server.ts",
+    "dev": "tsx watch --env-file-if-exists=../../.env.local src/server.ts",
+    "start": "tsx --env-file-if-exists=../../.env.local src/server.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'no linter yet'",
-    "test": "NODE_ENV=test tsx --env-file=../../.env.local --test tests/**/*.test.ts"
+    "test": "NODE_ENV=test tsx --env-file-if-exists=../../.env.local --test tests/**/*.test.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
