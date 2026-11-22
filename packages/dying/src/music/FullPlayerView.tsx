@@ -208,7 +208,7 @@ export const FullPlayerView: React.FC<FullPlayerViewProps> = ({
           />
 
           {/* TAB 1: UP NEXT */}
-          {activeTab === "upNext" && (
+          <div className={cn("h-full flex-col min-h-0", activeTab === "upNext" ? "flex" : "hidden")}>
             <FullPlayerQueueTab
               track={track}
               thumbnail={thumbnail}
@@ -226,10 +226,10 @@ export const FullPlayerView: React.FC<FullPlayerViewProps> = ({
               onSelectTrack={onSelectTrack}
               onRemoveFromQueue={onRemoveFromQueue}
             />
-          )}
+          </div>
 
           {/* TAB 2: LYRICS */}
-          {activeTab === "lyrics" && (
+          <div className={cn("h-full flex-col min-h-0", activeTab === "lyrics" ? "flex" : "hidden")}>
             <FullPlayerLyricsTab
               resolvedLoading={resolvedLoading}
               resolvedSynced={resolvedSynced}
@@ -239,15 +239,15 @@ export const FullPlayerView: React.FC<FullPlayerViewProps> = ({
               currentTime={currentTime}
               onSeek={onSeek}
             />
-          )}
+          </div>
 
           {/* TAB 3: RELATED */}
-          {activeTab === "related" && (
+          <div className={cn("h-full flex-col min-h-0", activeTab === "related" ? "flex" : "hidden")}>
             <FullPlayerRelatedTab
               related={related}
               onSelectRelated={onSelectRelated}
             />
-          )}
+          </div>
         </div>
       </div>
     </div>
