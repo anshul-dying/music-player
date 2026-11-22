@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ChevronUp,
   ChevronDown,
@@ -116,6 +116,8 @@ export const FloatingPlayerPill = React.forwardRef<
     },
     ref
   ) => {
+    const [scrubTime, setScrubTime] = useState<number | null>(null);
+
     return (
       <div
         ref={ref}
@@ -227,7 +229,7 @@ export const FloatingPlayerPill = React.forwardRef<
         {/* Lower row: Embedded Scrub Bar with Timings */}
         <div className="mt-1 flex w-full items-center gap-2.5 text-[10px] font-mono text-text-tertiary">
           <span className="w-8 text-right tabular-nums">
-            {formatTime(currentTime)}
+            {formatTime(scrubTime ?? currentTime)}
           </span>
           <div className="flex-1">
             <ScrubSlider
@@ -236,7 +238,11 @@ export const FloatingPlayerPill = React.forwardRef<
               max={duration || 100}
               value={currentTime}
               buffered={buffered}
-              onValueCommit={(val) => onSeek?.(val)}
+              onValueChange={setScrubTime}
+              onValueCommit={(val) => {
+                setScrubTime(null);
+                onSeek?.(val);
+              }}
               tooltipFormatter={(val) => formatTime(val)}
             />
           </div>

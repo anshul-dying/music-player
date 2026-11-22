@@ -44,7 +44,21 @@ export const ScrubSlider = React.forwardRef<
   ) => {
     const [hoverPos, setHoverPos] = useState<number | null>(null);
     const [hoverValue, setHoverValue] = useState<number | null>(null);
+    const [isScrubbing, setIsScrubbing] = useState(false);
+    const [scrubValue, setScrubValue] = useState<number | null>(null);
     const trackRef = useRef<HTMLDivElement>(null);
+
+    const handleValueChange = (vals: number[]) => {
+      setIsScrubbing(true);
+      setScrubValue(vals[0]);
+      onValueChange?.(vals[0]);
+    };
+
+    const handleValueCommit = (vals: number[]) => {
+      setIsScrubbing(false);
+      setScrubValue(null);
+      onValueCommit?.(vals[0]);
+    };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
       if (!trackRef.current || !tooltipFormatter || disabled) return;
@@ -73,7 +87,12 @@ export const ScrubSlider = React.forwardRef<
       lg: "h-4 w-4",
     };
 
-    const currentValue = value !== undefined ? [value] : undefined;
+    const effectiveValue =
+      isScrubbing && scrubValue !== null
+        ? [scrubValue]
+        : value !== undefined
+        ? [value]
+        : undefined;
     const defaultVal = defaultValue !== undefined ? [defaultValue] : [0];
 
     return (
@@ -85,7 +104,7 @@ export const ScrubSlider = React.forwardRef<
         {/* Tooltip on hover */}
         {tooltipFormatter && hoverPos !== null && hoverValue !== null && (
           <div
-            className="pointer-events-none absolute -top-8 z-30 -translate-x-1/2 rounded-md border border-white/10 bg-[#1e1e22]/95 px-2 py-0.5 text-[10px] font-medium tracking-wider text-white shadow-xl backdrop-blur-md transition-opacity"
+            className="pointer-events-none absolute -top-8 z-30 -translate-x-1/2 rounded-md border border-border-subtle bg-surface/95 px-2 py-0.5 text-[10px] font-medium tracking-wider text-text-primary shadow-xl backdrop-blur-md transition-opacity"
             style={{ left: `${hoverPos}%` }}
           >
             {tooltipFormatter(hoverValue)}
@@ -99,10 +118,19 @@ export const ScrubSlider = React.forwardRef<
             disabled && "cursor-not-allowed opacity-40",
             className
           )}
-          value={currentValue}
+          value={effectiveValue}
           defaultValue={defaultVal}
-          onValueChange={(vals) => onValueChange?.(vals[0])}
-          onValueCommit={(vals) => onValueCommit?.(vals[0])}
+          onValueChange={handleValueChange}
+          onValueCommit={handleValueCommit}
+          onPointerDown={(e) => {
+            setIsScrubbing(true);
+            props.onPointerDown?.(e);
+          }}
+          onPointerCancel={(e) => {
+            setIsScrubbing(false);
+            setScrubValue(null);
+            props.onPointerCancel?.(e);
+          }}
           min={min}
           max={max}
           step={step}
