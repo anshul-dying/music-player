@@ -182,8 +182,8 @@ export const createPlaybackSlice = (set: StoreSet, get: StoreGet) => ({
   seek: async (seconds: number) => {
     const engine = get().engine || getSharedEngine();
     if (engine) {
-      await engine.seek(seconds);
       set({ currentTime: seconds });
+      await engine.seek(seconds);
     }
   },
 

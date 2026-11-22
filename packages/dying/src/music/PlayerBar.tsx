@@ -51,11 +51,8 @@ export interface PlayerBarProps
   onExpandNowPlaying?: () => void;
 }
 
-function formatTime(seconds: number = 0): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-}
+const formatTime = (s: number = 0) =>
+  `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
 
 export const PlayerBar: React.FC<PlayerBarProps> = ({
   className,
@@ -88,6 +85,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   onExpandNowPlaying,
   ...props
 }) => {
+  const [scrubTime, setScrubTime] = React.useState<number | null>(null);
   const effectiveVolume = isMuted ? 0 : volume;
 
   const VolumeIcon = effectiveVolume === 0 ? VolumeX : effectiveVolume < 0.5 ? Volume1 : Volume2;
@@ -212,7 +210,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
         {/* Scrubber row */}
         <div className="flex items-center gap-3 w-full">
           <span className="w-9 text-right font-mono text-[11px] text-text-tertiary">
-            {formatTime(currentTime)}
+            {formatTime(scrubTime ?? currentTime)}
           </span>
 
           <div className="flex-1">
@@ -222,7 +220,11 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
               max={duration || 100}
               value={currentTime}
               buffered={buffered}
-              onValueCommit={(val) => onSeek?.(val)}
+              onValueChange={setScrubTime}
+              onValueCommit={(val) => {
+                setScrubTime(null);
+                onSeek?.(val);
+              }}
               tooltipFormatter={(val) => formatTime(val)}
             />
           </div>
