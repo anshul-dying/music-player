@@ -36,6 +36,14 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
   const activeLineRef = useRef<HTMLDivElement>(null);
   const [userIsScrolling, setUserIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isProgrammaticScrollRef = useRef(false);
+  const hasInitialScrolledRef = useRef(false);
+  const lastLyricsRef = useRef(lyrics);
+
+  if (lastLyricsRef.current !== lyrics) {
+    lastLyricsRef.current = lyrics;
+    hasInitialScrolledRef.current = false;
+  }
 
   // Determine mode: synced karaoke or unsynced plain text
   const isSynced = synced !== undefined ? synced : lyrics.length > 0;
@@ -52,6 +60,8 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
   // Handle user manual scroll interruption (2.8s pause on user scroll)
   const handleScroll = () => {
     if (!isSynced) return;
+    if (isProgrammaticScrollRef.current) return;
+
     setUserIsScrolling(true);
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
@@ -65,10 +75,22 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
   useEffect(() => {
     if (!isSynced || !autoScroll || userIsScrolling || activeIndex === -1) return;
     if (activeLineRef.current && containerRef.current) {
+      const isFirst = !hasInitialScrolledRef.current;
+      hasInitialScrolledRef.current = true;
+      isProgrammaticScrollRef.current = true;
+
       activeLineRef.current.scrollIntoView({
-        behavior: "smooth",
+        behavior: isFirst ? "instant" : "smooth",
         block: "center",
       });
+
+      const timer = setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 350);
+
+      return () => {
+        clearTimeout(timer);
+      };
     }
   }, [activeIndex, autoScroll, userIsScrolling, isSynced]);
 
