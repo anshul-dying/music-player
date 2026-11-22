@@ -60,17 +60,14 @@ export class WebExtensionAdapter implements NetworkAdapter {
     if (typeof window === 'undefined') {
       throw new Error('[WebExtensionAdapter] Cannot be used in non-browser context');
     }
-    // Route player metadata requests through proxy endpoint for reliable mobile client streaming formats
-    if (url.includes('/youtubei/v1/player')) {
-      try {
+    try {
+      const resp = await this.fetchViaExtension(url, init);
+      if (resp.ok) return resp;
+      if (url.includes('/youtubei/v1/player')) {
         const proxyResp = await this.fallbackProxyFetch(url, init);
         if (proxyResp.ok) return proxyResp;
-      } catch {
-        // Fallback to extension fetch
       }
-    }
-    try {
-      return await this.fetchViaExtension(url, init);
+      return resp;
     } catch (err: any) {
       console.warn('[WebExtensionAdapter] Extension fetch failed, falling back to proxy:', err?.message || err);
       return this.fallbackProxyFetch(url, init);

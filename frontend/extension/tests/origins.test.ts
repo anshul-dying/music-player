@@ -41,8 +41,9 @@ describe("isAllowedOrigin", () => {
     assert.equal(isAllowedOrigin("http://127.0.0.1:4000", allowed), true);
   });
 
-  it("allows the production host", () => {
+  it("allows the production host on https and http", () => {
     assert.equal(isAllowedOrigin(PROD, allowed), true);
+    assert.equal(isAllowedOrigin("http://35.154.36.24.nip.io", allowed), true);
   });
 
   it("rejects public wildcard hosting and look-alike hosts", () => {
@@ -61,8 +62,8 @@ describe("isAllowedOrigin", () => {
   });
 
   it("rejects the wrong scheme or port for non loopback hosts", () => {
-    assert.equal(isAllowedOrigin("http://35.154.36.24.nip.io", allowed), false);
     assert.equal(isAllowedOrigin("https://35.154.36.24.nip.io:8443", allowed), false);
+    assert.equal(isAllowedOrigin("http://35.154.36.24.nip.io:8080", allowed), false);
   });
 
   it("rejects values that are not a bare origin", () => {
@@ -85,6 +86,7 @@ describe("toMatchPatterns", () => {
     assert.deepEqual(patterns, [
       "http://localhost/*",
       "http://127.0.0.1/*",
+      "http://35.154.36.24.nip.io/*",
       "https://35.154.36.24.nip.io/*",
       "https://music.example.com/*",
     ]);
