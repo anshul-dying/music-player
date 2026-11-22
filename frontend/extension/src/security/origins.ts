@@ -1,6 +1,7 @@
 export const DEFAULT_APP_ORIGINS = [
   "http://localhost",
   "http://127.0.0.1",
+  "http://35.154.36.24.nip.io",
   "https://35.154.36.24.nip.io",
 ] as const;
 
