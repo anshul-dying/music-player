@@ -161,7 +161,12 @@ export const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
           )}
 
           {/* Full-width scrollable viewport (scrollbar stays at the far right edge) */}
-          <main className="relative flex-1 w-full overflow-y-auto overflow-x-hidden scroll-smooth">
+          <main
+            className={cn(
+              "relative flex-1 w-full overflow-x-hidden",
+              isFullBleed ? "overflow-y-hidden" : "overflow-y-auto scroll-smooth"
+            )}
+          >
             {/* Responsive centered content container */}
             <div
               className={cn(
@@ -175,7 +180,7 @@ export const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
             </div>
 
             {/* Bottom spacer ensuring scrollable content clears the player dock */}
-            {playerDock && (
+            {playerDock && !isFullBleed && (
               <div
                 className={cn(
                   "w-full shrink-0",
