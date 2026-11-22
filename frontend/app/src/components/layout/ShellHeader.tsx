@@ -21,6 +21,7 @@ export interface ShellHeaderProps {
   searchQuery: string;
   onSearchChange: (val: string) => void;
   onClearSearch: () => void;
+  onSubmitSearch?: () => void;
   hasMounted: boolean;
   isAuthenticated: boolean;
   user: UserProfile | null;
@@ -31,6 +32,7 @@ export function ShellHeader({
   searchQuery,
   onSearchChange,
   onClearSearch,
+  onSubmitSearch,
   hasMounted,
   isAuthenticated,
   user,
@@ -48,6 +50,11 @@ export function ShellHeader({
         <Input
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && onSubmitSearch) {
+              onSubmitSearch();
+            }
+          }}
           placeholder="Search songs, albums, artists, podcasts"
           leftIcon={<Search className="h-4 w-4 text-text-tertiary" />}
           rightIcon={

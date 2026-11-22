@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useTransition, useRef } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   AppShell,
   FloatingPlayerPill,
@@ -12,7 +12,7 @@ import { usePlayerStore, type Track } from '../../stores/playerStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useLibraryStore } from '../../stores/libraryStore';
 import { useTrackActionsStore } from '../../stores/trackActionsStore';
-import { useMediaSession, useKeyboardShortcuts, useUrlSync, useYouTubeSyncInit } from '../../hooks';
+import { useMediaSession, useKeyboardShortcuts, useUrlSync, useYouTubeSyncInit, useSearchNavigation } from '../../hooks';
 import { ShellHeader } from './ShellHeader';
 import { ShellSidebar } from './ShellSidebar';
 import { ShellModals } from './ShellModals';
@@ -24,7 +24,6 @@ export interface PersistentAppShellProps {
 export function PersistentAppShell({ children }: PersistentAppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const [hasMounted, setHasMounted] = useState(false);
   const [, startTransition] = useTransition();
@@ -41,9 +40,13 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
   const [fullPlayerTab, setFullPlayerTab] = useState<'lyrics' | 'upNext' | 'related'>('lyrics');
 
-  // Search State
-  const initialQuery = searchParams.get('q') || '';
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  // Search State & Navigation
+  const {
+    searchQuery,
+    handleSearchChange,
+    handleClearSearch,
+    handleSearchSubmit,
+  } = useSearchNavigation();
 
   // Stores
   const { user, isAuthenticated } = useAuthStore();
@@ -124,31 +127,6 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
     fetchLibrary();
   }, [fetchLibrary, isAuthenticated]);
 
-  useEffect(() => {
-    const q = searchParams.get('q');
-    if (q !== null && q !== searchQuery) {
-      setSearchQuery(q);
-    }
-  }, [searchParams]);
-
-  const handleSearchChange = (val: string) => {
-    setSearchQuery(val);
-    startTransition(() => {
-      if (val.trim()) {
-        router.push(`/search?q=${encodeURIComponent(val.trim())}`);
-      } else if (pathname === '/search') {
-        router.push('/');
-      }
-    });
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
-    if (pathname === '/search') {
-      router.push('/');
-    }
-  };
-
   const getTrackDataWithLiked = useCallback(
     (t: Track): TrackData => ({
       id: t.id || t.videoId,
@@ -190,6 +168,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
               searchQuery={searchQuery}
               onSearchChange={handleSearchChange}
               onClearSearch={handleClearSearch}
+              onSubmitSearch={handleSearchSubmit}
               hasMounted={hasMounted}
               isAuthenticated={isAuthenticated}
               user={user}

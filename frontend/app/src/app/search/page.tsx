@@ -108,7 +108,7 @@ function SearchContent() {
             YOUTUBE MUSIC SEARCH
           </Text>
           <Heading level={1} size="h1">
-            {query.trim() ? `Results for "${query}"` : 'Search Music'}
+            {query.trim() ? `Results for "${query.trim()}"` : 'Search Music'}
           </Heading>
         </Stack>
         {isSearching && <Badge variant="accent">Searching InnerTube...</Badge>}
