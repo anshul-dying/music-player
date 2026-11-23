@@ -4,6 +4,7 @@ import { X, Music2 } from "lucide-react";
 import { TrackData } from "./TrackRow";
 import { LyricLine } from "./SyncedLyricsView";
 import { cn } from "../utils/cn";
+import { getHighResArtworkUrl } from "../utils/artwork";
 
 export interface FullImmersionLyricsProps {
   track: TrackData | null;
@@ -30,6 +31,20 @@ export const FullImmersionLyrics: React.FC<FullImmersionLyricsProps> = ({
   const activeLineRef = useRef<HTMLDivElement>(null);
   const [userIsScrolling, setUserIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const rawThumb = track?.thumbnailUrl || track?.thumbnail;
+  const highResThumb = getHighResArtworkUrl(rawThumb, 1024);
+  const [imgSrc, setImgSrc] = useState(() => highResThumb || rawThumb || "");
+
+  useEffect(() => {
+    setImgSrc(highResThumb || rawThumb || "");
+  }, [highResThumb, rawThumb]);
+
+  const handleImageError = () => {
+    if (rawThumb && imgSrc !== rawThumb) {
+      setImgSrc(rawThumb);
+    }
+  };
 
   // Find index of currently active line
   const activeIndex = lyrics.reduce((currActive, line, index) => {
@@ -86,9 +101,9 @@ export const FullImmersionLyrics: React.FC<FullImmersionLyricsProps> = ({
 
           {/* Dark Graphite Blurred Ambient Backdrop */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {track?.thumbnailUrl && (
+            {imgSrc && (
               <img
-                src={track.thumbnailUrl}
+                src={imgSrc}
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 h-full w-full object-cover blur-[140px] scale-150 opacity-25 filter saturate-150"
@@ -122,10 +137,11 @@ export const FullImmersionLyrics: React.FC<FullImmersionLyricsProps> = ({
             {/* Left Column: Large Album Art & Track Info */}
             <div className="lg:col-span-5 flex flex-col items-center lg:items-start justify-center h-full">
               <div className="relative aspect-square w-56 sm:w-72 md:w-80 lg:w-[400px] shrink-0 overflow-hidden rounded-2xl lg:rounded-3xl bg-surface border border-border-muted shadow-[0_30px_70px_rgba(0,0,0,0.85)]">
-                {track?.thumbnailUrl ? (
+                {imgSrc ? (
                   <img
-                    src={track.thumbnailUrl}
-                    alt={track.title}
+                    src={imgSrc}
+                    alt={track?.title || "Album Artwork"}
+                    onError={handleImageError}
                     className="h-full w-full object-cover"
                   />
                 ) : (

@@ -194,3 +194,4 @@ export {
 
 // Utilities
 export { cn } from "./utils/cn";
+export { getHighResArtworkUrl } from "./utils/artwork";
