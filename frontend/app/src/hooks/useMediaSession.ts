@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { getHighResArtworkUrl } from '@mp/dying';
 import { usePlayerStore } from '../stores/playerStore';
 
 export function useMediaSession(): void {
@@ -15,11 +16,13 @@ export function useMediaSession(): void {
 
     if (currentTrack) {
       const artwork: MediaImage[] = currentTrack.thumbnail
-        ? ['96x96', '128x128', '192x192', '256x256', '512x512'].map((sizes) => ({
-            src: currentTrack.thumbnail!,
-            sizes,
-            type: 'image/jpeg',
-          }))
+        ? [
+            { src: currentTrack.thumbnail, sizes: '96x96', type: 'image/jpeg' },
+            { src: currentTrack.thumbnail, sizes: '128x128', type: 'image/jpeg' },
+            { src: getHighResArtworkUrl(currentTrack.thumbnail, 256), sizes: '256x256', type: 'image/jpeg' },
+            { src: getHighResArtworkUrl(currentTrack.thumbnail, 512), sizes: '512x512', type: 'image/jpeg' },
+            { src: getHighResArtworkUrl(currentTrack.thumbnail, 1024), sizes: '1024x1024', type: 'image/jpeg' },
+          ]
         : [];
 
       if (typeof MediaMetadata !== 'undefined') {

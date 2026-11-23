@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Dialog as RadixDialog, VisuallyHidden as RadixVisuallyHidden } from "radix-ui";
 import { LyricLine } from "./SyncedLyricsView";
 import { cn } from "../utils/cn";
+import { getHighResArtworkUrl } from "../utils/artwork";
 import {
   FullPlayerTab,
   RelatedItem,
@@ -28,18 +29,22 @@ import {
   type FullPlayerRelatedTabProps,
 } from "./full-player/FullPlayerRelatedTab";
 
-export type { FullPlayerTab, RelatedItem, FullPlayerViewProps };
+export type {
+  FullPlayerTab,
+  RelatedItem,
+  FullPlayerViewProps,
+  FullPlayerArtworkHeroProps,
+  FullPlayerTabsHeaderProps,
+  FullPlayerQueueTabProps,
+  FullPlayerLyricsTabProps,
+  FullPlayerRelatedTabProps,
+};
 export {
   FullPlayerArtworkHero,
-  type FullPlayerArtworkHeroProps,
   FullPlayerTabsHeader,
-  type FullPlayerTabsHeaderProps,
   FullPlayerQueueTab,
-  type FullPlayerQueueTabProps,
   FullPlayerLyricsTab,
-  type FullPlayerLyricsTabProps,
   FullPlayerRelatedTab,
-  type FullPlayerRelatedTabProps,
 };
 
 export const FullPlayerView: React.FC<FullPlayerViewProps> = ({
@@ -120,6 +125,7 @@ export const FullPlayerView: React.FC<FullPlayerViewProps> = ({
   };
 
   const thumbnail = track?.thumbnailUrl || track?.thumbnail;
+  const highResBackdrop = getHighResArtworkUrl(thumbnail, 1024);
 
   const isLyricsObj = typeof lyrics === "object" && lyrics !== null && !Array.isArray(lyrics);
   const resolvedSynced =
@@ -176,9 +182,9 @@ export const FullPlayerView: React.FC<FullPlayerViewProps> = ({
     >
       {/* Dynamic Ambient Aura Backdrop Glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
-        {thumbnail && (
+        {(highResBackdrop || thumbnail) && (
           <img
-            src={thumbnail}
+            src={highResBackdrop || thumbnail}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover blur-[160px] scale-150 opacity-15 filter saturate-200"

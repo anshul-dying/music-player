@@ -3,6 +3,7 @@ import { ChevronDown, Music2, Headphones, Video, Heart, Maximize2, Minimize2 } f
 import { TrackData } from "../TrackRow";
 import { AmbientAura } from "../../effects/AmbientAura";
 import { cn } from "../../utils/cn";
+import { getHighResArtworkUrl } from "../../utils/artwork";
 
 export interface FullPlayerArtworkHeroProps {
   track: TrackData | null;
@@ -24,6 +25,18 @@ export const FullPlayerArtworkHero: React.FC<FullPlayerArtworkHeroProps> = ({
   onLikeClick,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const highResThumbnail = getHighResArtworkUrl(thumbnail, 1024);
+  const [imgSrc, setImgSrc] = useState(() => highResThumbnail || thumbnail || "");
+
+  useEffect(() => {
+    setImgSrc(highResThumbnail || thumbnail || "");
+  }, [highResThumbnail, thumbnail]);
+
+  const handleImageError = () => {
+    if (thumbnail && imgSrc !== thumbnail) {
+      setImgSrc(thumbnail);
+    }
+  };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -73,9 +86,9 @@ export const FullPlayerArtworkHero: React.FC<FullPlayerArtworkHeroProps> = ({
       <div className="relative aspect-square w-64 sm:w-80 md:w-96 lg:w-[420px] xl:w-[460px] shrink-0 flex items-center justify-center">
         {/* Ambient Obsidian Backlight Glow */}
         <div className="absolute inset-0 -m-8 rounded-full pointer-events-none overflow-hidden opacity-20 blur-3xl scale-125">
-          {thumbnail ? (
+          {imgSrc ? (
             <img
-              src={thumbnail}
+              src={imgSrc}
               alt=""
               aria-hidden="true"
               className="h-full w-full object-cover filter saturate-200"
@@ -87,10 +100,11 @@ export const FullPlayerArtworkHero: React.FC<FullPlayerArtworkHeroProps> = ({
 
         {/* Album Artwork Card */}
         <div className="relative z-10 h-full w-full overflow-hidden rounded-2xl lg:rounded-3xl bg-surface border border-border-subtle shadow-[0_28px_72px_rgba(0,0,0,0.9)] group">
-          {thumbnail ? (
+          {imgSrc ? (
             <img
-              src={thumbnail}
+              src={imgSrc}
               alt={track?.title || "Album Artwork"}
+              onError={handleImageError}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-102"
             />
           ) : (
