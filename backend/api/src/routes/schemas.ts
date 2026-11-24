@@ -69,6 +69,8 @@ export const historyBody = z
 
 export const importBody = z.object({
   kind: z.enum(["liked_songs", "playlists"]).default("liked_songs"),
+  playlistIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  playlistUrl: z.string().trim().max(500).optional(),
 });
 
 export class InvalidRequestError extends Error {
