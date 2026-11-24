@@ -11,6 +11,7 @@ import {
   AlbumDetails,
   RemotePlaylistDetails,
   SyntheticShelfOptions,
+  ShelfItemData,
 } from '@mp/player-core';
 import { type TrackData } from '@mp/dying';
 import { type LyricsResponse } from '@mp/api-contract';
@@ -73,10 +74,13 @@ export interface PlayerStoreState {
   verdicts: ClientVerdict[];
   error: string | null;
 
-  // Lyrics
+  // Lyrics & Related
   lyrics: LyricsResponse | null;
   isLyricsLoading: boolean;
   lyricsError: string | null;
+  related: ShelfItemData[];
+  relatedForVideoId: string | null;
+  isRelatedLoading: boolean;
 
   // Actions
   initialize: (mediaElement?: HTMLMediaElement) => void;
@@ -110,6 +114,7 @@ export interface PlayerStoreState {
   getAlbum: (browseId: string) => Promise<AlbumDetails>;
   getPlaylist: (playlistId: string) => Promise<RemotePlaylistDetails>;
   fetchLyrics: (track: Track) => Promise<LyricsResponse | null>;
+  fetchRelated: (videoId: string) => Promise<ShelfItemData[]>;
 }
 
 export type StoreSet = (

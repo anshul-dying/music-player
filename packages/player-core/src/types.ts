@@ -166,6 +166,7 @@ export interface HomeFeedData {
 export interface NextRadioData {
   queue: Track[];
   related: ShelfItemData[];
+  relatedBrowseId?: string;
 }
 
 export interface ArtistDetails {

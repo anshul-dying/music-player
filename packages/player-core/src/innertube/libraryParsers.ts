@@ -2,11 +2,83 @@ import { RemotePlaylistDetails, Track, InnerTubeClientName } from '../types';
 import { NetworkAdapter } from '../adapters/network';
 import { INNERTUBE_CONTEXTS, INNERTUBE_PUBLIC_KEY } from './contexts';
 import { parseSearchResults } from './searchParsers';
+import { readResponsiveSubtitle } from './subtitleRuns';
 
 /**
- * Parses YouTube Music browse response for 'FEmusic_liked_videos' into Track[]
+ * Parses YouTube Music browse response for 'FEmusic_liked_videos' / 'VLLM' into Track[]
  */
 export function parseLikedVideos(data: any): Track[] {
+  if (!data || typeof data !== 'object') return [];
+
+  const tracks: Track[] = [];
+  const seenIds = new Set<string>();
+
+  const extractRenderer = (r: any) => {
+    if (!r || typeof r !== 'object') return;
+    const flexColumns = r.flexColumns || [];
+    const titleRuns = flexColumns[0]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
+    const title = titleRuns?.[0]?.text || '';
+
+    let videoId: string | undefined =
+      r.playlistItemData?.videoId ||
+      r.overlay?.musicItemThumbnailOverlayRenderer?.content?.musicPlayButtonRenderer
+        ?.playNavigationEndpoint?.watchEndpoint?.videoId ||
+      titleRuns?.[0]?.navigationEndpoint?.watchEndpoint?.videoId;
+
+    if (!videoId && Array.isArray(r.menu?.menuRenderer?.items)) {
+      for (const m of r.menu.menuRenderer.items) {
+        const nav = m.menuNavigationItemRenderer?.navigationEndpoint;
+        if (nav?.watchEndpoint?.videoId) {
+          videoId = nav.watchEndpoint.videoId;
+          break;
+        }
+      }
+    }
+
+    if (!videoId || !title || seenIds.has(videoId)) return;
+    seenIds.add(videoId);
+
+    const { artist, artistId, album, albumId, duration } = readResponsiveSubtitle(r, title);
+    const rawThumbs = r.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || [];
+    const thumbnail = rawThumbs.length > 0 ? rawThumbs[rawThumbs.length - 1].url : '';
+
+    tracks.push({
+      id: videoId,
+      videoId,
+      title,
+      artist,
+      artistId,
+      album,
+      albumId,
+      duration,
+      thumbnail,
+      thumbnails: rawThumbs,
+    });
+  };
+
+  const scanShelves = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const el of node) scanShelves(el);
+      return;
+    }
+    const shelf = node.musicPlaylistShelfRenderer || node.musicShelfRenderer;
+    if (shelf && Array.isArray(shelf.contents)) {
+      for (const item of shelf.contents) {
+        if (item?.musicResponsiveListItemRenderer) {
+          extractRenderer(item.musicResponsiveListItemRenderer);
+        }
+      }
+      return;
+    }
+    for (const key of Object.keys(node)) {
+      scanShelves(node[key]);
+    }
+  };
+
+  scanShelves(data);
+  if (tracks.length > 0) return tracks;
+
   return parseSearchResults(data);
 }
 

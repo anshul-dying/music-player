@@ -9,6 +9,7 @@ import {
   AlbumDetails,
   RemotePlaylistDetails,
   SyntheticShelfOptions,
+  ShelfItemData,
 } from '@mp/player-core';
 import {
   type StoreSet,
@@ -22,6 +23,7 @@ import {
   setSharedEngine,
   createNetworkAdapter,
   ITAG_METADATA,
+  relatedCache,
 } from './engineContext';
 
 export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
@@ -35,6 +37,9 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
   networkAdapterType: 'dev-proxy' as NetworkAdapterType,
   streamingStatus: 'Edge Fallback Proxy' as StreamingStatus,
   verdicts: [] as ClientVerdict[],
+  related: [] as ShelfItemData[],
+  relatedForVideoId: null as string | null,
+  isRelatedLoading: false,
 
   setNetworkAdapterType: (type: NetworkAdapterType) => {
     const engine = get().engine;
@@ -131,6 +136,12 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
     }
     if (!engine) return { queue: [], related: [] };
     const radioData = await engine.getNextRadio(videoId, playlistId);
+    if (radioData.related.length > 0) {
+      relatedCache.set(videoId, radioData.related);
+    }
+    if (get().currentTrack?.videoId === videoId) {
+      set({ related: radioData.related, relatedForVideoId: videoId });
+    }
     if (radioData.queue.length > 0) {
       const currentTrack = get().currentTrack;
       const firstRadioTrack = radioData.queue[0];
@@ -164,6 +175,34 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
       }
     }
     return radioData;
+  },
+
+  fetchRelated: async (videoId: string): Promise<ShelfItemData[]> => {
+    if (!videoId) return [];
+    const cached = relatedCache.get(videoId);
+    if (cached) {
+      set({ related: cached, relatedForVideoId: videoId, isRelatedLoading: false });
+      return cached;
+    }
+    let engine = get().engine;
+    if (!engine) {
+      get().initialize();
+      engine = getSharedEngine();
+    }
+    if (!engine) return [];
+    set({ isRelatedLoading: true });
+    try {
+      const radioData = await engine.getNextRadio(videoId);
+      relatedCache.set(videoId, radioData.related);
+      if (get().currentTrack?.videoId === videoId) {
+        set({ related: radioData.related, relatedForVideoId: videoId });
+      }
+      return radioData.related;
+    } catch {
+      return [];
+    } finally {
+      set({ isRelatedLoading: false });
+    }
   },
 
   getArtist: async (browseId: string): Promise<ArtistDetails> => {

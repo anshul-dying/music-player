@@ -16,6 +16,7 @@ import {
 } from './contexts';
 import { parseSearchResults } from './searchParsers';
 import { parseHomeFeed, parseNextRadio, type SyntheticShelfOptions } from './feedParsers';
+import { parseRelatedBrowse } from './nextRadioParsers';
 import {
   parseAlbumDetails,
   parseArtistDetails,
@@ -172,7 +173,18 @@ export class InnerTubeClient {
       'X-YouTube-Client-Version': context.client.clientVersion,
     });
 
-    return this.parseNextRadio(data);
+    const parsed = this.parseNextRadio(data);
+
+    if (parsed.related.length === 0 && parsed.relatedBrowseId) {
+      try {
+        const relatedData = await this.browse(parsed.relatedBrowseId, undefined, clientName);
+        parsed.related = parseRelatedBrowse(relatedData);
+      } catch {
+        // Non-fatal: related tab can remain empty if browse fails
+      }
+    }
+
+    return parsed;
   }
 
   /**

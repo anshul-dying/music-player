@@ -28,6 +28,7 @@ export interface FullPlayerViewProps {
 
   // Queue & Navigation
   queue?: TrackData[];
+  currentIndex?: number;
   onSelectTrack?: (track: TrackData) => void;
   onReorderQueue?: (newQueue: TrackData[]) => void;
   onRemoveFromQueue?: (trackId: string) => void;
