@@ -59,6 +59,8 @@ export const FullPlayerView: React.FC<FullPlayerViewProps> = ({
   onTabChange,
 
   queue = [],
+  currentIndex,
+  isShuffle = false,
   onSelectTrack,
   onRemoveFromQueue,
   infiniteRadio = true,
@@ -229,6 +231,8 @@ export const FullPlayerView: React.FC<FullPlayerViewProps> = ({
               currentFilter={currentFilter}
               onFilterClick={handleFilterClick}
               queue={queue}
+              currentIndex={currentIndex}
+              isShuffle={isShuffle}
               onSelectTrack={onSelectTrack}
               onRemoveFromQueue={onRemoveFromQueue}
             />

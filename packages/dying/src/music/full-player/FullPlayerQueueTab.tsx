@@ -20,6 +20,8 @@ export interface FullPlayerQueueTabProps {
   currentFilter: string;
   onFilterClick: (chip: string) => void;
   queue: TrackData[];
+  currentIndex?: number;
+  isShuffle?: boolean;
   onSelectTrack?: (track: TrackData) => void;
   onRemoveFromQueue?: (trackId: string) => void;
 }
@@ -44,9 +46,85 @@ export const FullPlayerQueueTab: React.FC<FullPlayerQueueTabProps> = ({
   currentFilter,
   onFilterClick,
   queue,
+  currentIndex,
+  isShuffle = false,
   onSelectTrack,
   onRemoveFromQueue,
 }) => {
+  const resolvedIndex =
+    typeof currentIndex === "number" && currentIndex >= 0 && currentIndex < queue.length
+      ? currentIndex
+      : track
+      ? queue.findIndex((q) => q.id === track.id)
+      : -1;
+  const upcomingTracks = resolvedIndex >= 0 ? queue.slice(resolvedIndex + 1) : queue;
+  const previousTracks = resolvedIndex > 0 ? queue.slice(0, resolvedIndex) : [];
+
+  const renderQueueRow = (queueTrack: TrackData, displayIndex: number, keyPrefix: string) => {
+    const qThumb = queueTrack.thumbnailUrl || queueTrack.thumbnail;
+    return (
+      <div
+        key={`${keyPrefix}-${queueTrack.id || displayIndex}`}
+        role="button"
+        tabIndex={0}
+        onClick={() => onSelectTrack?.(queueTrack)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelectTrack?.(queueTrack);
+          }
+        }}
+        className="group flex items-center justify-between px-3 py-2 rounded-xl hover:bg-surface-hover/80 transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+      >
+        <div className="flex items-center min-w-0 flex-1 mr-3">
+          <span className="font-mono text-xs text-text-tertiary w-6 shrink-0 group-hover:hidden">
+            {displayIndex}
+          </span>
+          <div className="hidden group-hover:flex w-6 shrink-0 items-center justify-start text-white">
+            <Play size={14} className="fill-current" />
+          </div>
+
+          <div className="relative h-9 w-9 shrink-0 rounded-lg overflow-hidden bg-surface border border-border-subtle mr-3">
+            {qThumb ? (
+              <img src={qThumb} alt={queueTrack.title} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-white/[0.04] text-text-tertiary">
+                <Music2 size={14} />
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-medium text-text-primary group-hover:text-white truncate">
+              {queueTrack.title}
+            </span>
+            <span className="text-xs text-text-secondary truncate">
+              {queueTrack.artist}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {onRemoveFromQueue && (
+            <button
+              type="button"
+              aria-label={`Remove ${queueTrack.title} from queue`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemoveFromQueue(queueTrack.id);
+              }}
+              className="opacity-0 group-hover:opacity-100 flex h-7 w-7 items-center justify-center rounded-full text-text-secondary hover:text-status-error hover:bg-white/[0.08] transition-all cursor-pointer"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+          <span className="text-xs font-mono text-text-tertiary">
+            {formatDuration(queueTrack.duration)}
+          </span>
+        </div>
+      </div>
+    );
+  };
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Radio Source Subheader & Save Pill */}
@@ -144,79 +222,41 @@ export const FullPlayerQueueTab: React.FC<FullPlayerQueueTabProps> = ({
           </div>
         )}
 
-        {/* Queue Tracks */}
-        {queue.length > 0 ? (
-          queue.map((queueTrack, index) => {
-            const qThumb = queueTrack.thumbnailUrl || queueTrack.thumbnail;
-            return (
-              <div
-                key={queueTrack.id || `q-${index}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelectTrack?.(queueTrack)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onSelectTrack?.(queueTrack);
-                  }
-                }}
-                className="group flex items-center justify-between px-3 py-2 rounded-xl hover:bg-surface-hover/80 transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
-              >
-                <div className="flex items-center min-w-0 flex-1 mr-3">
-                  <span className="font-mono text-xs text-text-tertiary w-6 shrink-0 group-hover:hidden">
-                    {index + 1}
-                  </span>
-                  <div className="hidden group-hover:flex w-6 shrink-0 items-center justify-start text-white">
-                    <Play size={14} className="fill-current" />
-                  </div>
-
-                  <div className="relative h-9 w-9 shrink-0 rounded-lg overflow-hidden bg-surface border border-border-subtle mr-3">
-                    {qThumb ? (
-                      <img src={qThumb} alt={queueTrack.title} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-white/[0.04] text-text-tertiary">
-                        <Music2 size={14} />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium text-text-primary group-hover:text-white truncate">
-                      {queueTrack.title}
-                    </span>
-                    <span className="text-xs text-text-secondary truncate">
-                      {queueTrack.artist}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {onRemoveFromQueue && (
-                    <button
-                      type="button"
-                      aria-label={`Remove ${queueTrack.title} from queue`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRemoveFromQueue(queueTrack.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 flex h-7 w-7 items-center justify-center rounded-full text-text-secondary hover:text-status-error hover:bg-white/[0.08] transition-all cursor-pointer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                  <span className="text-xs font-mono text-text-tertiary">
-                    {formatDuration(queueTrack.duration)}
-                  </span>
-                </div>
-              </div>
-            );
-          })
+        {/* Upcoming Queue Tracks */}
+        {upcomingTracks.length > 0 ? (
+          <>
+            <div className="flex items-center justify-between px-3 py-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
+                Up Next ({upcomingTracks.length})
+              </span>
+              {isShuffle && (
+                <span className="text-[11px] text-text-tertiary">Shuffle on</span>
+              )}
+            </div>
+            {upcomingTracks.map((queueTrack, idx) =>
+              renderQueueRow(queueTrack, idx + 1, "up")
+            )}
+          </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-48 text-center">
+          <div className="flex flex-col items-center justify-center h-40 text-center">
             <EmptyState
               title="No upcoming tracks"
               description="Turn on Autoplay to keep the music playing with similar songs."
             />
+          </div>
+        )}
+
+        {/* Previously Played Tracks */}
+        {previousTracks.length > 0 && (
+          <div className="pt-3 mt-3 border-t border-border-subtle/60 opacity-65">
+            <div className="px-3 py-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
+                Previously Played ({previousTracks.length})
+              </span>
+            </div>
+            {previousTracks.map((queueTrack, idx) =>
+              renderQueueRow(queueTrack, idx + 1, "prev")
+            )}
           </div>
         )}
       </div>
