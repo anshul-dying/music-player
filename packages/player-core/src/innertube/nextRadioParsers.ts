@@ -86,6 +86,8 @@ export function parseNextRadio(data: any): NextRadioData {
     }
   };
 
+  let relatedBrowseId: string | undefined;
+
   if (Array.isArray(tabs)) {
     const relatedTab =
       tabs.find((t: any) => {
@@ -97,6 +99,7 @@ export function parseNextRadio(data: any): NextRadioData {
       }) || tabs[2];
 
     if (relatedTab) {
+      relatedBrowseId = relatedTab.tabRenderer?.endpoint?.browseEndpoint?.browseId;
       findRelated(relatedTab);
     } else {
       findRelated(data);
@@ -116,5 +119,36 @@ export function parseNextRadio(data: any): NextRadioData {
     }
   }
 
-  return { queue, related };
+  return { queue, related, ...(relatedBrowseId ? { relatedBrowseId } : {}) };
+}
+
+/**
+ * Parse a lazy-loaded Related tab browse response into ShelfItemData[]
+ */
+export function parseRelatedBrowse(data: any): ShelfItemData[] {
+  const related: ShelfItemData[] = [];
+  const seenIds = new Set<string>();
+  if (!data || typeof data !== 'object') return related;
+
+  const walk = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+    if (node.musicTwoRowItemRenderer || node.musicResponsiveListItemRenderer) {
+      const item = parseShelfItem(node);
+      if (item && !seenIds.has(item.id)) {
+        seenIds.add(item.id);
+        related.push(item);
+      }
+      return;
+    }
+    if (Array.isArray(node)) {
+      for (const child of node) walk(child);
+      return;
+    }
+    for (const key of Object.keys(node)) {
+      walk(node[key]);
+    }
+  };
+
+  walk(data);
+  return related;
 }

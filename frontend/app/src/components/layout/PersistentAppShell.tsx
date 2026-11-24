@@ -16,6 +16,7 @@ import { useMediaSession, useKeyboardShortcuts, useUrlSync, useYouTubeSyncInit, 
 import { ShellHeader } from './ShellHeader';
 import { ShellSidebar } from './ShellSidebar';
 import { ShellModals } from './ShellModals';
+import { handleRelatedSelection } from './fullPlayerHandlers';
 
 export interface PersistentAppShellProps {
   children: React.ReactNode;
@@ -63,6 +64,8 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
     repeatMode,
     lyrics,
     isLyricsLoading,
+    related,
+    relatedForVideoId,
     togglePlay,
     seek,
     setVolume,
@@ -74,6 +77,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
     initialize,
     removeFromQueue,
     playTrack,
+    fetchRelated,
   } = usePlayerStore();
 
   const {
@@ -90,6 +94,17 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
 
   useMediaSession();
   useYouTubeSyncInit();
+
+  useEffect(() => {
+    if (
+      isFullPlayerOpen &&
+      fullPlayerTab === 'related' &&
+      currentTrack?.videoId &&
+      relatedForVideoId !== currentTrack.videoId
+    ) {
+      fetchRelated(currentTrack.videoId).catch(() => {});
+    }
+  }, [isFullPlayerOpen, fullPlayerTab, currentTrack?.videoId, relatedForVideoId, fetchRelated]);
 
   const handleToggleLyrics = useCallback(() => {
     if (isFullPlayerOpen && fullPlayerTab === 'lyrics') {
@@ -234,6 +249,13 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
             queue={queue.map(getTrackDataWithLiked)}
             lyrics={lyrics || undefined}
             isLyricsLoading={isLyricsLoading}
+            related={related.map((item) => ({ ...item, thumbnailUrl: item.thumbnail }))}
+            onSelectRelated={(item) =>
+              handleRelatedSelection(item, playTrack, (route) => {
+                setIsFullPlayerOpen(false);
+                startTransition(() => router.push(route));
+              })
+            }
             onLikeToggle={() => {
               if (currentTrack) {
                 toggleLike(currentTrack);

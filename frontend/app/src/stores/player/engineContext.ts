@@ -5,6 +5,7 @@ import {
   NativeHttpAdapter,
   NetworkAdapter,
   Track,
+  ShelfItemData,
 } from '@mp/player-core';
 import { type LyricsResponse } from '@mp/api-contract';
 import { type NetworkAdapterType, type PlayerStoreState } from './types';
@@ -78,6 +79,7 @@ export const ITAG_METADATA: Record<number, { bitrate: number; sampleRate: number
 };
 
 export const lyricsCache = new Map<string, LyricsResponse>();
+export const relatedCache = new Map<string, ShelfItemData[]>();
 let lyricsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function debouncedFetchLyrics(
