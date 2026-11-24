@@ -12,7 +12,7 @@ import {
   Flex,
   Separator,
 } from '@mp/dying';
-import { useYouTubeAuthStore } from '@/stores/youtubeAuthStore';
+import { useYouTubeAuthStore } from '../stores/youtubeAuthStore';
 import { StageExtensionMissing } from './youtube/StageExtensionMissing';
 import { StageSignedOut } from './youtube/StageSignedOut';
 import { StageConnected } from './youtube/StageConnected';
@@ -47,33 +47,32 @@ export const ConnectYouTubeModal: React.FC<ConnectYouTubeModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg select-none">
-        <DialogHeader>
-          <Flex align="center" justify="between" className="w-full">
-            <Stack gap="1">
+        <DialogHeader className="pr-8">
+          <Stack gap="1">
+            <Flex align="center" gap="2" wrap="wrap">
               <DialogTitle className="text-xl font-bold text-text-primary">
                 YouTube Music Bridge
               </DialogTitle>
-              <DialogDescription className="text-xs text-text-secondary">
-                Connect your account to sync liked music and playlists
-              </DialogDescription>
-            </Stack>
-
-            {isExtensionInstalled ? (
-              isYouTubeAuthenticated ? (
-                <Badge variant="success" dot size="sm">
-                  Connected
-                </Badge>
+              {isExtensionInstalled ? (
+                isYouTubeAuthenticated ? (
+                  <Badge variant="success" dot size="sm">
+                    Connected
+                  </Badge>
+                ) : (
+                  <Badge variant="info" dot size="sm">
+                    Extension Active
+                  </Badge>
+                )
               ) : (
-                <Badge variant="info" dot size="sm">
-                  Extension Active
+                <Badge variant="warning" dot size="sm">
+                  Extension Missing
                 </Badge>
-              )
-            ) : (
-              <Badge variant="warning" dot size="sm">
-                Extension Missing
-              </Badge>
-            )}
-          </Flex>
+              )}
+            </Flex>
+            <DialogDescription className="text-xs text-text-secondary">
+              Connect your account to sync liked music and playlists
+            </DialogDescription>
+          </Stack>
         </DialogHeader>
 
         <Separator className="my-2" />
