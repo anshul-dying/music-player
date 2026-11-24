@@ -141,3 +141,54 @@ export async function fetchSpotifyPlaylistsWithTracks(
 
   return results;
 }
+
+export function extractSpotifyPlaylistId(input: string): string | null {
+  const match =
+    input.match(/(?:playlist\/|spotify:playlist:)([A-Za-z0-9]{10,})/) ||
+    input.match(/^([A-Za-z0-9]{22})$/);
+  return match ? match[1] : null;
+}
+
+export async function fetchPublicSpotifyPlaylist(
+  playlistUrlOrId: string
+): Promise<SpotifyPlaylistWithTracks> {
+  const id = extractSpotifyPlaylistId(playlistUrlOrId.trim());
+  if (!id) throw new Error("Invalid Spotify playlist URL");
+
+  const res = await fetch(`https://open.spotify.com/embed/playlist/${encodeURIComponent(id)}`, {
+    headers: { "User-Agent": "Mozilla/5.0" },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch public Spotify playlist (${res.status})`);
+  }
+
+  const html = await res.text();
+  const scriptMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>(.*?)<\/script>/);
+  if (!scriptMatch) {
+    throw new Error("Could not parse public Spotify playlist page");
+  }
+
+  const nextData = JSON.parse(scriptMatch[1]);
+  const entity = nextData?.props?.pageProps?.state?.data?.entity;
+  if (!entity || !Array.isArray(entity.trackList)) {
+    throw new Error("Playlist is private or unavailable");
+  }
+
+  const tracks: SpotifyTrackItem[] = entity.trackList
+    .filter((t: any) => t && t.title)
+    .map((t: any) => ({
+      title: String(t.title),
+      artist: String(t.subtitle || "Unknown Artist").replace(/\u00a0/g, " "),
+      durationMs: Number(t.duration || 0),
+      albumArt: null,
+    }));
+
+  const coverUrl = entity.coverArt?.sources?.[0]?.url ?? null;
+  return {
+    id,
+    name: String(entity.name || "Imported Spotify Playlist"),
+    description: null,
+    coverUrl,
+    tracks,
+  };
+}

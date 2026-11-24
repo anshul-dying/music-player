@@ -13,6 +13,7 @@ import { usePlayerStore, type Track } from '../../stores/playerStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useLibraryStore } from '../../stores/libraryStore';
 import { useTrackActionsStore } from '../../stores/trackActionsStore';
+import { useSpotifyImportStore } from '../../stores/spotifyImportStore';
 import { useMediaSession, useKeyboardShortcuts, useUrlSync, useYouTubeSyncInit, useSearchNavigation } from '../../hooks';
 import { ShellHeader } from './ShellHeader';
 import { ShellSidebar } from './ShellSidebar';
@@ -56,6 +57,10 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   // Stores
   const { user, isAuthenticated } = useAuthStore();
   const { toast } = useToast();
+  const setSpotifyToast = useSpotifyImportStore((s) => s.setToastFn);
+  useEffect(() => {
+    setSpotifyToast(toast);
+  }, [setSpotifyToast, toast]);
   const {
     currentTrack, currentIndex, playbackState, currentTime, duration,
     bufferedPercent, volume, isMuted, queue, isShuffle, repeatMode,

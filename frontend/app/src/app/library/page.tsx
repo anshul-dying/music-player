@@ -7,10 +7,12 @@ import {
   Flex,
   PageHeader,
   Button,
+  Badge,
 } from '@mp/dying';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useYouTubeAuthStore } from '@/stores/youtubeAuthStore';
+import { useSpotifyImportStore } from '@/stores/spotifyImportStore';
 import { ConnectYouTubeModal } from '@/components/ConnectYouTubeModal';
 import { SpotifyImportModal } from '@/components/SpotifyImportModal';
 import { LibraryLikedCards } from './components/LibraryLikedCards';
@@ -19,7 +21,11 @@ import { LibraryRecentlyPlayed } from './components/LibraryRecentlyPlayed';
 
 export default function LibraryPage() {
   const [connectModalOpen, setConnectModalOpen] = useState(false);
-  const [spotifyModalOpen, setSpotifyModalOpen] = useState(false);
+  const spotifyModalOpen = useSpotifyImportStore((s) => s.isModalOpen);
+  const setSpotifyModalOpen = useSpotifyImportStore((s) => s.setModalOpen);
+  const spotifyJob = useSpotifyImportStore((s) => s.job);
+  const isSpotifyRunning =
+    spotifyJob?.status === 'queued' || spotifyJob?.status === 'running';
 
   const { likedTracks, playlists, history, fetchLibrary } = useLibraryStore();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -69,7 +75,14 @@ export default function LibraryPage() {
               leftIcon={<Disc3 size={15} className="text-status-success" />}
               onClick={() => setSpotifyModalOpen(true)}
             >
-              Import Spotify
+              <Flex align="center" gap="2">
+                <span>Import Spotify</span>
+                {isSpotifyRunning && (
+                  <Badge variant="info" size="xs">
+                    {spotifyJob?.progress ?? 0}%
+                  </Badge>
+                )}
+              </Flex>
             </Button>
             <Button
               variant="secondary"
@@ -108,7 +121,6 @@ export default function LibraryPage() {
         open={spotifyModalOpen}
         onOpenChange={setSpotifyModalOpen}
         isAuthenticated={isAuthenticated}
-        onImported={fetchLibrary}
       />
     </Container>
   );

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Disc3, Heart, ListMusic, RefreshCw } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Disc3, Heart, Link2, ListMusic, RefreshCw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,8 @@ import {
   DialogDescription,
   Badge,
   Button,
+  Input,
+  ProgressBar,
   Stack,
   Flex,
   Text,
@@ -17,137 +19,42 @@ import {
   Spinner,
   Separator,
 } from '@mp/dying';
+import { useSpotifyImportStore } from '@/stores/spotifyImportStore';
 
 export interface SpotifyImportModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isAuthenticated: boolean;
-  onImported?: () => void;
-}
-
-interface ImportJobState {
-  id: string;
-  kind: 'liked_songs' | 'playlists';
-  status: 'queued' | 'running' | 'done' | 'failed';
-  progress: number;
-  stats?: {
-    total?: number;
-    matched?: number;
-    unmatched?: number;
-    unmatchedTracks?: string[];
-  };
-  error?: string | null;
 }
 
 export const SpotifyImportModal: React.FC<SpotifyImportModalProps> = ({
   open,
   onOpenChange,
   isAuthenticated,
-  onImported,
 }) => {
-  const [loadingStatus, setLoadingStatus] = useState(false);
-  const [configured, setConfigured] = useState(true);
-  const [connected, setConnected] = useState(false);
-  const [job, setJob] = useState<ImportJobState | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const esRef = useRef<EventSource | null>(null);
-
-  const checkStatus = useCallback(async () => {
-    if (!isAuthenticated) return;
-    setLoadingStatus(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/auth/spotify/status', { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setConfigured(Boolean(data.configured));
-        setConnected(Boolean(data.connected));
-      }
-    } catch {
-      setError('Could not reach Spotify auth status endpoint.');
-    } finally {
-      setLoadingStatus(false);
-    }
-  }, [isAuthenticated]);
+  const [playlistUrl, setPlaylistUrl] = useState('');
+  const {
+    loadingStatus,
+    configured,
+    connected,
+    job,
+    error,
+    checkStatus,
+    connectSpotify,
+    disconnectSpotify,
+    startImport,
+  } = useSpotifyImportStore();
 
   useEffect(() => {
-    if (open) checkStatus();
-    return () => {
-      esRef.current?.close();
-      esRef.current = null;
-    };
-  }, [open, checkStatus]);
-
-  const handleConnect = async () => {
-    setError(null);
-    try {
-      const res = await fetch('/api/auth/spotify/start?mode=json', {
-        credentials: 'include',
-      });
-      const data = await res.json();
-      if (!res.ok || !data.authorizeUrl) {
-        setError(data?.error || 'Failed to start Spotify OAuth');
-        return;
-      }
-      window.location.href = data.authorizeUrl;
-    } catch {
-      setError('Failed to start Spotify OAuth.');
+    if (open && isAuthenticated) {
+      checkStatus();
     }
-  };
-
-  const handleDisconnect = async () => {
-    await fetch('/api/auth/spotify/disconnect', {
-      method: 'POST',
-      credentials: 'include',
-    }).catch(() => {});
-    setConnected(false);
-    setJob(null);
-  };
-
-  const startImport = async (kind: 'liked_songs' | 'playlists') => {
-    setError(null);
-    esRef.current?.close();
-    try {
-      const res = await fetch('/api/import/spotify', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.job) {
-        setError(data?.error || 'Failed to queue Spotify import');
-        return;
-      }
-
-      setJob(data.job);
-      const es = new EventSource(`/api/import/${data.job.id}/events`, {
-        withCredentials: true,
-      });
-      esRef.current = es;
-      es.onmessage = (evt) => {
-        try {
-          const nextJob = JSON.parse(evt.data) as ImportJobState;
-          setJob(nextJob);
-          if (nextJob.status === 'done') {
-            es.close();
-            onImported?.();
-          } else if (nextJob.status === 'failed') {
-            es.close();
-          }
-        } catch {
-          // Ignore parse errors
-        }
-      };
-      es.onerror = () => {
-        es.close();
-      };
-    } catch {
-      setError('Failed to start Spotify import.');
-    }
-  };
+  }, [open, isAuthenticated, checkStatus]);
 
   const isRunning = job?.status === 'queued' || job?.status === 'running';
+  const total = job?.stats?.total ?? 0;
+  const processed = job?.stats?.processed ?? 0;
+  const matched = job?.stats?.matched ?? 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -174,7 +81,7 @@ export const SpotifyImportModal: React.FC<SpotifyImportModalProps> = ({
 
         {!isAuthenticated ? (
           <Alert variant="warning" title="Sign in required">
-            Sign in to your GaneGan account first to connect Spotify and save imported playlists.
+            Sign in to your GaneGan account first to import playlists.
           </Alert>
         ) : loadingStatus ? (
           <Flex align="center" justify="center" className="py-8">
@@ -188,70 +95,102 @@ export const SpotifyImportModal: React.FC<SpotifyImportModalProps> = ({
               </Alert>
             )}
 
-            {!configured && (
-              <Alert variant="warning" title="Spotify not configured">
-                Set SPOTIFY_CLIENT_ID in the API environment to enable OAuth.
-              </Alert>
-            )}
+            <Stack gap="2">
+              <Text size="xs" className="text-text-secondary font-medium">
+                Public Playlist URL (no Spotify Premium required)
+              </Text>
+              <Flex gap="2" align="center">
+                <Input
+                  value={playlistUrl}
+                  onChange={(e) => setPlaylistUrl(e.target.value)}
+                  placeholder="https://open.spotify.com/playlist/..."
+                  disabled={isRunning}
+                />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<Link2 size={14} />}
+                  onClick={() => startImport('playlists', playlistUrl.trim())}
+                  disabled={isRunning || !playlistUrl.trim()}
+                >
+                  Import URL
+                </Button>
+              </Flex>
+            </Stack>
+
+            <Separator />
 
             {!connected ? (
               <Button
-                variant="primary"
+                variant="secondary"
                 leftIcon={<Disc3 size={16} />}
-                onClick={handleConnect}
+                onClick={connectSpotify}
                 disabled={!configured}
               >
-                Connect Spotify Account
+                Connect Spotify Account (OAuth)
               </Button>
             ) : (
-              <Stack gap="3">
-                <Flex gap="2" wrap="wrap">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<Heart size={15} />}
-                    onClick={() => startImport('liked_songs')}
-                    disabled={isRunning}
-                  >
-                    Import Liked Songs
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    leftIcon={<ListMusic size={15} />}
-                    onClick={() => startImport('playlists')}
-                    disabled={isRunning}
-                  >
-                    Import Playlists
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leftIcon={<RefreshCw size={14} />}
-                    onClick={handleDisconnect}
-                    disabled={isRunning}
-                  >
-                    Disconnect
-                  </Button>
-                </Flex>
+              <Flex gap="2" wrap="wrap">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<Heart size={15} />}
+                  onClick={() => startImport('liked_songs')}
+                  disabled={isRunning}
+                >
+                  Import Liked Songs
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<ListMusic size={15} />}
+                  onClick={() => startImport('playlists')}
+                  disabled={isRunning}
+                >
+                  Import Playlists
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<RefreshCw size={14} />}
+                  onClick={disconnectSpotify}
+                  disabled={isRunning}
+                >
+                  Disconnect
+                </Button>
+              </Flex>
+            )}
 
-                {job && (
-                  <Alert
-                    variant={
-                      job.status === 'failed'
-                        ? 'error'
-                        : job.status === 'done'
-                        ? 'success'
-                        : 'info'
-                    }
-                    title={`Import ${job.status} (${job.progress ?? 0}%)`}
-                  >
-                    <Text size="xs">
-                      Matched {job.stats?.matched ?? 0} of {job.stats?.total ?? 0} tracks
-                      {job.stats?.unmatched ? ` (${job.stats.unmatched} unmatched)` : ''}
-                      {job.error ? ` — ${job.error}` : ''}
-                    </Text>
-                  </Alert>
+            {job && (
+              <Stack gap="2" className="rounded-xl border border-border-subtle bg-surface/60 p-3.5">
+                <ProgressBar
+                  label={
+                    job.status === 'queued'
+                      ? 'Queued for import...'
+                      : job.status === 'running'
+                      ? 'Matching & importing tracks...'
+                      : job.status === 'done'
+                      ? 'Import complete'
+                      : 'Import failed'
+                  }
+                  value={job.progress ?? 0}
+                  max={100}
+                  size="md"
+                  showValue
+                  indeterminate={job.status === 'queued'}
+                />
+                <Text size="xs" className="text-text-secondary">
+                  {isRunning
+                    ? `Processed ${processed} of ${total} tracks • ${matched} matched`
+                    : `Matched ${matched} of ${total} tracks${
+                        job.stats?.unmatched ? ` (${job.stats.unmatched} unmatched)` : ''
+                      }`}
+                  {job.error ? ` — ${job.error}` : ''}
+                </Text>
+                {isRunning && (
+                  <Text size="xs" className="text-text-tertiary">
+                    You can safely close this dialog — songs will keep importing in the background and a toast notification will appear when finished.
+                  </Text>
                 )}
               </Stack>
             )}

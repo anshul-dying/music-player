@@ -5,6 +5,7 @@ export interface SpotifyImportJobData {
   userId: string;
   kind: "liked_songs" | "playlists";
   playlistIds?: string[];
+  playlistUrl?: string;
 }
 
 let importQueue: Queue<SpotifyImportJobData> | null = null;

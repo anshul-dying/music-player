@@ -39,10 +39,19 @@ export const importRoutes: FastifyPluginAsync = async (app) => {
 
   app.post("/spotify", importRateLimitConfig, async (req, reply) => {
     const userId = await requireUser(req);
-    const { kind, playlistIds } = parseRequest(importBody, req.body ?? {});
+    const { kind, playlistIds, playlistUrl } = parseRequest(importBody, req.body ?? {});
+
+    if (playlistUrl) {
+      const valid = /(?:playlist\/|spotify:playlist:)([A-Za-z0-9]{10,})|^[A-Za-z0-9]{22}$/.test(
+        playlistUrl
+      );
+      if (!valid) {
+        return reply.status(400).send({ error: "invalid_playlist_url" });
+      }
+    }
 
     const isTest = process.env.NODE_ENV === "test";
-    const token = await getValidSpotifyAccessToken(userId);
+    const token = playlistUrl ? "public" : await getValidSpotifyAccessToken(userId);
     if (!token && !isTest) {
       return reply.status(400).send({ error: "spotify_not_connected" });
     }
@@ -52,9 +61,10 @@ export const importRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(503).send({ error: "queue_unavailable" });
     }
 
+    const effectiveKind = playlistUrl ? "playlists" : kind;
     const [job] = await db
       .insert(schema.importJobs)
-      .values({ userId, kind, status: "queued" })
+      .values({ userId, kind: effectiveKind, status: "queued" })
       .returning();
 
     if (queue) {
@@ -62,8 +72,9 @@ export const importRoutes: FastifyPluginAsync = async (app) => {
         await queue.add("spotify-import", {
           jobId: job.id,
           userId,
-          kind,
+          kind: effectiveKind,
           playlistIds,
+          playlistUrl,
         });
       } catch (err) {
         await db

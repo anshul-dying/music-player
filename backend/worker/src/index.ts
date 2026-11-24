@@ -6,6 +6,7 @@ import {
   updateImportJob,
 } from "@mp/db";
 import {
+  fetchPublicSpotifyPlaylist,
   fetchSpotifyLikedTracks,
   fetchSpotifyPlaylistsWithTracks,
   getWorkerSpotifyToken,
@@ -18,6 +19,7 @@ interface ImportJobPayload {
   userId: string;
   kind: "liked_songs" | "playlists";
   playlistIds?: string[];
+  playlistUrl?: string;
 }
 
 async function publishProgress(
@@ -38,7 +40,7 @@ async function publishProgress(
 
 async function matchInBatches(
   tracks: SpotifyTrackItem[],
-  onStep: (done: number) => Promise<void>
+  onStep: (done: number, matchedSoFar: number, unmatchedSoFar: number) => Promise<void>
 ) {
   const matched: Array<{ source: SpotifyTrackItem; yt: MatchedYtTrack }> = [];
   const unmatched: string[] = [];
@@ -52,14 +54,14 @@ async function matchInBatches(
       if (item.yt) matched.push({ source: item.source, yt: item.yt });
       else unmatched.push(`${item.source.title} — ${item.source.artist}`);
     }
-    await onStep(Math.min(tracks.length, i + batch.length));
+    await onStep(Math.min(tracks.length, i + batch.length), matched.length, unmatched.length);
   }
 
   return { matched, unmatched };
 }
 
 async function processImportJob(pub: Redis, data: ImportJobPayload) {
-  const { jobId, userId, kind, playlistIds } = data;
+  const { jobId, userId, kind, playlistIds, playlistUrl } = data;
 
   await publishProgress(pub, jobId, {
     status: "running",
@@ -67,21 +69,21 @@ async function processImportJob(pub: Redis, data: ImportJobPayload) {
     stats: { total: 0, matched: 0, unmatched: 0 },
   });
 
-  const accessToken = await getWorkerSpotifyToken(userId);
   let totalTracks = 0;
   let matchedCount = 0;
   const unmatchedTracks: string[] = [];
 
-  if (kind === "liked_songs") {
+  if (kind === "liked_songs" && !playlistUrl) {
+    const accessToken = await getWorkerSpotifyToken(userId);
     const tracks = await fetchSpotifyLikedTracks(accessToken);
     totalTracks = tracks.length;
 
-    const { matched, unmatched } = await matchInBatches(tracks, async (done) => {
+    const { matched, unmatched } = await matchInBatches(tracks, async (done, mCount, uCount) => {
       const pct = totalTracks > 0 ? Math.round((done / totalTracks) * 95) : 95;
       await publishProgress(pub, jobId, {
         status: "running",
         progress: pct,
-        stats: { total: totalTracks, matched: matchedCount, unmatched: unmatchedTracks.length },
+        stats: { total: totalTracks, processed: done, matched: mCount, unmatched: uCount },
       });
     });
 
@@ -98,18 +100,25 @@ async function processImportJob(pub: Redis, data: ImportJobPayload) {
     matchedCount = matched.length;
     unmatchedTracks.push(...unmatched);
   } else {
-    const playlists = await fetchSpotifyPlaylistsWithTracks(accessToken, playlistIds);
+    const playlists = playlistUrl
+      ? [await fetchPublicSpotifyPlaylist(playlistUrl)]
+      : await fetchSpotifyPlaylistsWithTracks(await getWorkerSpotifyToken(userId), playlistIds);
     totalTracks = playlists.reduce((acc, pl) => acc + pl.tracks.length, 0);
     let processed = 0;
 
     for (const pl of playlists) {
-      const { matched, unmatched } = await matchInBatches(pl.tracks, async (done) => {
+      const { matched, unmatched } = await matchInBatches(pl.tracks, async (done, mCount, uCount) => {
         const overall = processed + done;
         const pct = totalTracks > 0 ? Math.round((overall / totalTracks) * 95) : 95;
         await publishProgress(pub, jobId, {
           status: "running",
           progress: pct,
-          stats: { total: totalTracks, matched: matchedCount, unmatched: unmatchedTracks.length },
+          stats: {
+            total: totalTracks,
+            processed: overall,
+            matched: matchedCount + mCount,
+            unmatched: unmatchedTracks.length + uCount,
+          },
         });
       });
 
