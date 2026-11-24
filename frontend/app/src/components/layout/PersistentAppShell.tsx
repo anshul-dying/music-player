@@ -20,7 +20,6 @@ import { ShellModals } from './ShellModals';
 import { ShellBottomNav } from './ShellBottomNav';
 import { ShellCommandPalette } from './ShellCommandPalette';
 import { ShellDynamicAccentSync } from './ShellDynamicAccentSync';
-import { handleRelatedSelection } from './fullPlayerHandlers';
 
 export interface PersistentAppShellProps {
   children: React.ReactNode;
@@ -57,12 +56,12 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   const { user, isAuthenticated } = useAuthStore();
   const { toast } = useToast();
   const {
-    currentTrack, currentIndex, playbackState, currentTime, duration,
+    currentTrack, playbackState, currentTime, duration,
     bufferedPercent, volume, isMuted, queue, isShuffle, repeatMode,
-    lyrics, isLyricsLoading, related, relatedForVideoId,
+    lyrics, isLyricsLoading,
     togglePlay, seek, setVolume, toggleMute, next, previous,
-    toggleShuffle, toggleRepeat, initialize, removeFromQueue, play,
-    playTrack, fetchRelated,
+    toggleShuffle, toggleRepeat, initialize, removeFromQueue,
+    playTrack,
   } = usePlayerStore();
   const { playlists, fetchLibrary, toggleLike, isLiked } = useLibraryStore();
 
@@ -73,17 +72,6 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
 
   useMediaSession();
   useYouTubeSyncInit();
-
-  useEffect(() => {
-    if (
-      isFullPlayerOpen &&
-      fullPlayerTab === 'related' &&
-      currentTrack?.videoId &&
-      relatedForVideoId !== currentTrack.videoId
-    ) {
-      fetchRelated(currentTrack.videoId).catch(() => {});
-    }
-  }, [isFullPlayerOpen, fullPlayerTab, currentTrack?.videoId, relatedForVideoId, fetchRelated]);
 
   const handleToggleLyrics = useCallback(() => {
     if (isFullPlayerOpen && fullPlayerTab === 'lyrics') {
@@ -243,21 +231,14 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
             activeTab={fullPlayerTab}
             onTabChange={setFullPlayerTab}
             queue={queue.map(getTrackDataWithLiked)}
-            currentIndex={currentIndex}
-            isShuffle={isShuffle}
             lyrics={lyrics || undefined}
             isLyricsLoading={isLyricsLoading}
-            related={related.map((item) => ({ ...item, thumbnailUrl: item.thumbnail }))}
-            onSelectRelated={(item) =>
-              handleRelatedSelection(item, playTrack, (route) => {
-                setIsFullPlayerOpen(false);
-                startTransition(() => router.push(route));
-              })
-            }
             onLikeToggle={handleToggleCurrentLike}
             onSelectTrack={(t) => {
-              const idx = queue.findIndex((x) => (x.id || x.videoId) === t.id);
-              if (idx !== -1) play(idx);
+              const matched = queue.find((x) => (x.id || x.videoId) === t.id);
+              if (matched) {
+                playTrack(matched);
+              }
             }}
             onRemoveFromQueue={(trackId) => {
               const idx = queue.findIndex((x) => (x.id || x.videoId) === trackId);
