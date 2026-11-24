@@ -18,6 +18,12 @@ function impersonate(origin: string): HeaderInfo[] {
   return [set("Origin", origin), set("Referer", `${origin}/`), set("X-Origin", origin)];
 }
 
+export const EXCLUDED_INITIATOR_DOMAINS = [
+  "youtube.com",
+  "music.youtube.com",
+  "googlevideo.com",
+];
+
 export const DNR_RULES: Rule[] = [
   // 1. InnerTube Music client impersonation + CORS
   {
@@ -26,6 +32,7 @@ export const DNR_RULES: Rule[] = [
     condition: {
       urlFilter: "||music.youtube.com/youtubei/",
       resourceTypes: XHR,
+      excludedInitiatorDomains: EXCLUDED_INITIATOR_DOMAINS,
     },
     action: {
       type: "modifyHeaders",
@@ -40,6 +47,7 @@ export const DNR_RULES: Rule[] = [
     condition: {
       urlFilter: "||www.youtube.com/youtubei/",
       resourceTypes: XHR,
+      excludedInitiatorDomains: EXCLUDED_INITIATOR_DOMAINS,
     },
     action: {
       type: "modifyHeaders",
@@ -54,6 +62,7 @@ export const DNR_RULES: Rule[] = [
     condition: {
       urlFilter: "||www.youtube.com/sw.js_data",
       resourceTypes: XHR,
+      excludedInitiatorDomains: EXCLUDED_INITIATOR_DOMAINS,
     },
     action: {
       type: "modifyHeaders",
@@ -67,6 +76,7 @@ export const DNR_RULES: Rule[] = [
     condition: {
       urlFilter: "||www.youtube.com/iframe_api",
       resourceTypes: XHR,
+      excludedInitiatorDomains: EXCLUDED_INITIATOR_DOMAINS,
     },
     action: {
       type: "modifyHeaders",
@@ -80,6 +90,7 @@ export const DNR_RULES: Rule[] = [
     condition: {
       urlFilter: "||www.youtube.com/s/player/",
       resourceTypes: XHR,
+      excludedInitiatorDomains: EXCLUDED_INITIATOR_DOMAINS,
     },
     action: {
       type: "modifyHeaders",
@@ -93,6 +104,7 @@ export const DNR_RULES: Rule[] = [
     condition: {
       urlFilter: "||googlevideo.com/",
       resourceTypes: XHR_AND_MEDIA,
+      excludedInitiatorDomains: EXCLUDED_INITIATOR_DOMAINS,
     },
     action: {
       type: "modifyHeaders",
@@ -107,6 +119,7 @@ export const DNR_RULES: Rule[] = [
     condition: {
       urlFilter: "||googlevideo.com/*c=VISIONOS",
       resourceTypes: XHR_AND_MEDIA,
+      excludedInitiatorDomains: EXCLUDED_INITIATOR_DOMAINS,
     },
     action: {
       type: "modifyHeaders",
