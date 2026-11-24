@@ -69,7 +69,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           variantStyles[variant],
           sizeStyles[size],
           fullWidth && "w-full",
-          isDisabled && "cursor-not-allowed opacity-50 active:scale-100 hover:bg-current",
+          isDisabled && "cursor-not-allowed opacity-50 active:scale-100",
           className
         )}
         {...props}
