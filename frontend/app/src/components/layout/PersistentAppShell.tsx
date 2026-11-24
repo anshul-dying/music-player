@@ -53,6 +53,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   const { user, isAuthenticated } = useAuthStore();
   const {
     currentTrack,
+    currentIndex,
     playbackState,
     currentTime,
     duration,
@@ -76,6 +77,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
     toggleRepeat,
     initialize,
     removeFromQueue,
+    play,
     playTrack,
     fetchRelated,
   } = usePlayerStore();
@@ -247,6 +249,8 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
             activeTab={fullPlayerTab}
             onTabChange={setFullPlayerTab}
             queue={queue.map(getTrackDataWithLiked)}
+            currentIndex={currentIndex}
+            isShuffle={isShuffle}
             lyrics={lyrics || undefined}
             isLyricsLoading={isLyricsLoading}
             related={related.map((item) => ({ ...item, thumbnailUrl: item.thumbnail }))}
@@ -262,9 +266,12 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
               }
             }}
             onSelectTrack={(t) => {
-              const matched = queue.find((x) => (x.id || x.videoId) === t.id);
-              if (matched) {
-                playTrack(matched);
+              const idx = queue.findIndex((x) => (x.id || x.videoId) === t.id);
+              if (idx !== -1) {
+                play(idx);
+              } else {
+                const matched = queue.find((x) => (x.id || x.videoId) === t.id);
+                if (matched) playTrack(matched);
               }
             }}
             onRemoveFromQueue={(trackId) => {
