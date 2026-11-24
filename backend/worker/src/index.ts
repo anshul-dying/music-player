@@ -1,31 +1,179 @@
-// Worker: BullMQ jobs (Spotify import in Phase 4).
-// Requires REDIS_URL — BullMQ is Redis-backed and there is no honest
-// in-memory substitute. If Redis isn't configured the worker exits with a
-// clear message instead of silently doing nothing.
+import { Redis } from "ioredis";
+import { Worker } from "bullmq";
+import {
+  insertImportedLike,
+  insertImportedPlaylist,
+  updateImportJob,
+} from "@mp/db";
+import {
+  fetchSpotifyLikedTracks,
+  fetchSpotifyPlaylistsWithTracks,
+  getWorkerSpotifyToken,
+  type SpotifyTrackItem,
+} from "./spotifyApi.js";
+import { matchSpotifyTrack, type MatchedYtTrack } from "./matcher.js";
+
+interface ImportJobPayload {
+  jobId: string;
+  userId: string;
+  kind: "liked_songs" | "playlists";
+  playlistIds?: string[];
+}
+
+async function publishProgress(
+  pub: Redis,
+  jobId: string,
+  payload: {
+    status?: "queued" | "running" | "done" | "failed";
+    progress?: number;
+    stats?: Record<string, unknown>;
+    error?: string | null;
+  }
+) {
+  await updateImportJob(jobId, payload);
+  await pub
+    .publish(`import:progress:${jobId}`, JSON.stringify({ id: jobId, ...payload }))
+    .catch(() => {});
+}
+
+async function matchInBatches(
+  tracks: SpotifyTrackItem[],
+  onStep: (done: number) => Promise<void>
+) {
+  const matched: Array<{ source: SpotifyTrackItem; yt: MatchedYtTrack }> = [];
+  const unmatched: string[] = [];
+
+  for (let i = 0; i < tracks.length; i += 3) {
+    const batch = tracks.slice(i, i + 3);
+    const resolved = await Promise.all(
+      batch.map(async (source) => ({ source, yt: await matchSpotifyTrack(source) }))
+    );
+    for (const item of resolved) {
+      if (item.yt) matched.push({ source: item.source, yt: item.yt });
+      else unmatched.push(`${item.source.title} — ${item.source.artist}`);
+    }
+    await onStep(Math.min(tracks.length, i + batch.length));
+  }
+
+  return { matched, unmatched };
+}
+
+async function processImportJob(pub: Redis, data: ImportJobPayload) {
+  const { jobId, userId, kind, playlistIds } = data;
+
+  await publishProgress(pub, jobId, {
+    status: "running",
+    progress: 0,
+    stats: { total: 0, matched: 0, unmatched: 0 },
+  });
+
+  const accessToken = await getWorkerSpotifyToken(userId);
+  let totalTracks = 0;
+  let matchedCount = 0;
+  const unmatchedTracks: string[] = [];
+
+  if (kind === "liked_songs") {
+    const tracks = await fetchSpotifyLikedTracks(accessToken);
+    totalTracks = tracks.length;
+
+    const { matched, unmatched } = await matchInBatches(tracks, async (done) => {
+      const pct = totalTracks > 0 ? Math.round((done / totalTracks) * 95) : 95;
+      await publishProgress(pub, jobId, {
+        status: "running",
+        progress: pct,
+        stats: { total: totalTracks, matched: matchedCount, unmatched: unmatchedTracks.length },
+      });
+    });
+
+    for (const { source, yt } of matched) {
+      await insertImportedLike({
+        userId,
+        videoId: yt.videoId,
+        title: yt.title || source.title,
+        artist: yt.artist || source.artist,
+        albumArt: yt.thumbnail || source.albumArt,
+      });
+    }
+
+    matchedCount = matched.length;
+    unmatchedTracks.push(...unmatched);
+  } else {
+    const playlists = await fetchSpotifyPlaylistsWithTracks(accessToken, playlistIds);
+    totalTracks = playlists.reduce((acc, pl) => acc + pl.tracks.length, 0);
+    let processed = 0;
+
+    for (const pl of playlists) {
+      const { matched, unmatched } = await matchInBatches(pl.tracks, async (done) => {
+        const overall = processed + done;
+        const pct = totalTracks > 0 ? Math.round((overall / totalTracks) * 95) : 95;
+        await publishProgress(pub, jobId, {
+          status: "running",
+          progress: pct,
+          stats: { total: totalTracks, matched: matchedCount, unmatched: unmatchedTracks.length },
+        });
+      });
+
+      processed += pl.tracks.length;
+      matchedCount += matched.length;
+      unmatchedTracks.push(...unmatched);
+
+      await insertImportedPlaylist(
+        {
+          userId,
+          name: pl.name,
+          description: pl.description,
+          coverArt: pl.coverUrl,
+        },
+        matched.map(({ source, yt }) => ({
+          videoId: yt.videoId,
+          title: yt.title || source.title,
+          artist: yt.artist || source.artist,
+          albumArt: yt.thumbnail || source.albumArt,
+          durationMs: yt.durationSec ? yt.durationSec * 1000 : source.durationMs,
+        }))
+      );
+    }
+  }
+
+  await publishProgress(pub, jobId, {
+    status: "done",
+    progress: 100,
+    stats: {
+      total: totalTracks,
+      matched: matchedCount,
+      unmatched: unmatchedTracks.length,
+      unmatchedTracks: unmatchedTracks.slice(0, 50),
+    },
+  });
+}
+
 async function main() {
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) {
-    console.warn(
-      "[worker] REDIS_URL not set — nothing to do. Import jobs need Redis\n" +
-        "         (docker compose up redis, or any hosted Redis). Exiting.",
-    );
+    console.warn("[worker] REDIS_URL not set — exiting.");
     process.exit(0);
   }
 
-  const { Worker } = await import("bullmq");
-
-  const connection = { url: redisUrl };
-
-  const importWorker = new Worker(
+  const pub = new Redis(redisUrl);
+  const worker = new Worker<ImportJobPayload>(
     "spotify-import",
     async (job) => {
-      console.log(`[spotify-import] job ${job.id} — pipeline not implemented yet`);
-      return { ok: true };
+      try {
+        await processImportJob(pub, job.data);
+        return { ok: true };
+      } catch (err: any) {
+        await publishProgress(pub, job.data.jobId, {
+          status: "failed",
+          progress: 0,
+          error: err?.message || "import_failed",
+        });
+        throw err;
+      }
     },
-    { connection, concurrency: 4 },
+    { connection: { url: redisUrl }, concurrency: 4 }
   );
 
-  importWorker.on("failed", (job, err) => {
+  worker.on("failed", (job, err) => {
     console.error(`[spotify-import] job ${job?.id} failed:`, err.message);
   });
 

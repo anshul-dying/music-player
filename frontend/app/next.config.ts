@@ -36,6 +36,10 @@ const nextConfig: NextConfig = {
         source: "/api/lyrics/:path*",
         destination: `${backendUrl}/api/lyrics/:path*`,
       },
+      {
+        source: "/api/import/:path*",
+        destination: `${backendUrl}/api/import/:path*`,
+      },
     ];
   },
 };

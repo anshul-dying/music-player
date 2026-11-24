@@ -11,6 +11,7 @@ import { likesRoutes } from "./routes/likes.js";
 import { historyRoutes } from "./routes/history.js";
 import { lyricsRoutes } from "./routes/lyrics.js";
 import { importRoutes } from "./routes/import.js";
+import { spotifyAuthRoutes } from "./routes/spotifyAuth.js";
 import {
   createCredentialRateLimiter,
   getRateLimitPluginOptions,
@@ -19,6 +20,7 @@ import {
 import { parseTrustProxy } from "./trustProxy.js";
 import { closeDb } from "@mp/db";
 import { closeRedis, waitForRedisReady } from "./redis.js";
+import { closeImportQueue } from "./spotify/queue.js";
 
 export interface BuildServerOptions {
   logger?: boolean;
@@ -51,6 +53,7 @@ export async function buildServer(opts?: BuildServerOptions): Promise<FastifyIns
   // body parser never consumes the stream — Better Auth parses it itself.
   app.addHook("onRequest", async (req, reply) => {
     const url = req.raw.url?.split("?")[0];
+    if (url?.startsWith("/api/auth/spotify/")) return;
     if (url !== "/api/auth" && !url?.startsWith("/api/auth/")) return;
     if (await limitCredentials?.(req, reply)) return reply;
     // Better Auth keys its own limiter on X-Forwarded-For and only accepts a
@@ -69,8 +72,10 @@ export async function buildServer(opts?: BuildServerOptions): Promise<FastifyIns
   await app.register(historyRoutes, { prefix: "/api/history" });
   await app.register(lyricsRoutes, { prefix: "/api/lyrics" });
   await app.register(importRoutes, { prefix: "/api/import" });
+  await app.register(spotifyAuthRoutes, { prefix: "/api/auth/spotify" });
 
   app.addHook("onClose", async () => {
+    await closeImportQueue();
     await closeDb();
     await closeRedis();
   });

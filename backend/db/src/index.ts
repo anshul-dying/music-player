@@ -65,3 +65,11 @@ export async function closeDb(): Promise<void> {
 }
 
 export { schema };
+export { encryptToken, decryptToken } from "./tokenCrypto.js";
+export {
+  getSpotifyTokenByUserId,
+  updateSpotifyTokenByUserId,
+  updateImportJob,
+  insertImportedLike,
+  insertImportedPlaylist,
+} from "./spotifyRepo.js";
