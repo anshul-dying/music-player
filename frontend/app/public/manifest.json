@@ -1,0 +1,20 @@
+{
+  "name": "GaneGan — Ad-Free Music Streaming",
+  "short_name": "GaneGan",
+  "description": "Ad-free music streaming with Apple Music aesthetics and your personal library.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#000000",
+  "theme_color": "#141416",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

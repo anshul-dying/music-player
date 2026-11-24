@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { ThemeProviderClient } from "../components/ThemeProviderClient";
 import { PersistentAppShell } from "../components/layout/PersistentAppShell";
+import { PwaRegister } from "../components/PwaRegister";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 
@@ -12,6 +13,12 @@ export const metadata: Metadata = {
   },
   description: "Ad-free music streaming with Apple Music aesthetics and your personal library.",
   referrer: 'no-referrer',
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "GaneGan",
+  },
 };
 
 export const viewport: Viewport = {
@@ -28,6 +35,7 @@ export default function RootLayout({
     <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning>
       <body className="min-h-dvh bg-canvas text-text-primary antialiased">
         <ThemeProviderClient>
+          <PwaRegister />
           <Suspense fallback={null}>
             <PersistentAppShell>
               {children}
