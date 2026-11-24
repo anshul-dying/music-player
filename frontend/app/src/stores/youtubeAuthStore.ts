@@ -34,12 +34,51 @@ export interface YouTubeAuthState {
   resetSync: () => void;
 }
 
+const YT_SYNC_CACHE_KEY = 'mp_yt_synced_library_v1';
+
+function loadCachedYouTubeSync(): {
+  syncedLikedTracks: Track[];
+  syncedPlaylists: (RemotePlaylistDetails | any)[];
+} {
+  if (typeof window === 'undefined') {
+    return { syncedLikedTracks: [], syncedPlaylists: [] };
+  }
+  try {
+    const raw = localStorage.getItem(YT_SYNC_CACHE_KEY);
+    if (!raw) return { syncedLikedTracks: [], syncedPlaylists: [] };
+    const parsed = JSON.parse(raw);
+    return {
+      syncedLikedTracks: Array.isArray(parsed?.syncedLikedTracks) ? parsed.syncedLikedTracks : [],
+      syncedPlaylists: Array.isArray(parsed?.syncedPlaylists) ? parsed.syncedPlaylists : [],
+    };
+  } catch {
+    return { syncedLikedTracks: [], syncedPlaylists: [] };
+  }
+}
+
+function saveCachedYouTubeSync(
+  syncedLikedTracks: Track[],
+  syncedPlaylists: (RemotePlaylistDetails | any)[]
+) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(
+      YT_SYNC_CACHE_KEY,
+      JSON.stringify({ syncedLikedTracks, syncedPlaylists })
+    );
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+const initialSyncCache = loadCachedYouTubeSync();
+
 export const useYouTubeAuthStore = create<YouTubeAuthState>((set, get) => ({
   isExtensionInstalled: false,
   isYouTubeAuthenticated: false,
   youtubeAccount: null,
-  syncedLikedTracks: [],
-  syncedPlaylists: [],
+  syncedLikedTracks: initialSyncCache.syncedLikedTracks,
+  syncedPlaylists: initialSyncCache.syncedPlaylists,
   isChecking: false,
   isSyncing: false,
 
@@ -89,6 +128,10 @@ export const useYouTubeAuthStore = create<YouTubeAuthState>((set, get) => ({
         youtubeAccount: account,
       });
 
+      if (connected && get().syncedLikedTracks.length === 0 && !get().isSyncing) {
+        get().syncLibrary().catch(() => {});
+      }
+
       if (typeof window !== 'undefined') {
         import('./playerStore')
           .then(({ usePlayerStore }) => {
@@ -133,10 +176,14 @@ export const useYouTubeAuthStore = create<YouTubeAuthState>((set, get) => ({
         }
       }
 
+      const nextLiked = Array.isArray(likedTracks) ? likedTracks : [];
+      const nextPlaylists = Array.isArray(playlists) ? playlists : [];
+
       set({
-        syncedLikedTracks: Array.isArray(likedTracks) ? likedTracks : [],
-        syncedPlaylists: Array.isArray(playlists) ? playlists : [],
+        syncedLikedTracks: nextLiked,
+        syncedPlaylists: nextPlaylists,
       });
+      saveCachedYouTubeSync(nextLiked, nextPlaylists);
 
       // Persist synced items into backend database (PostgreSQL/PGlite)
       try {
@@ -179,6 +226,7 @@ export const useYouTubeAuthStore = create<YouTubeAuthState>((set, get) => ({
   },
 
   resetSync: () => {
+    saveCachedYouTubeSync([], []);
     set({
       syncedLikedTracks: [],
       syncedPlaylists: [],
