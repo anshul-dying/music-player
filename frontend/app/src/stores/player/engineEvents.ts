@@ -5,6 +5,7 @@ import {
   updateBufferStatus,
   ITAG_METADATA,
   lyricsCache,
+  relatedCache,
   debouncedFetchLyrics,
 } from './engineContext';
 import { createHistoryRecorder, recordPlay } from './historyRecorder';
@@ -31,6 +32,7 @@ export function bindEngineEvents(engine: PlayerEngine, set: StoreSet, get: Store
     lastTrackVideoId = track?.videoId || null;
     history.trackChange(track);
     const cached = track?.videoId ? lyricsCache.get(track.videoId) : null;
+    const cachedRelated = track?.videoId ? relatedCache.get(track.videoId) : null;
     set({
       currentTrack: track ? { ...track } : null,
       currentIndex: index,
@@ -38,6 +40,7 @@ export function bindEngineEvents(engine: PlayerEngine, set: StoreSet, get: Store
       lyrics: cached || null,
       isLyricsLoading: track ? !cached : false,
       lyricsError: null,
+      ...(isSameVideo && !cachedRelated ? {} : { related: cachedRelated || [], relatedForVideoId: cachedRelated ? track?.videoId || null : null }),
     });
 
     const curRate = get().playbackRate;
