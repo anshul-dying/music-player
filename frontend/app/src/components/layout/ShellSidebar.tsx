@@ -145,11 +145,13 @@ export function ShellSidebar({
           active={pathname === '/extension'}
           onClick={() => onNavigate('/extension')}
         />
-        <SidebarNavItem
-          icon={<Sparkles className="h-4 w-4 text-emerald-400" />}
-          label="Dying 2.0 Design System"
-          onClick={() => onNavigate('/dying')}
-        />
+        {process.env.NODE_ENV === 'development' && (
+          <SidebarNavItem
+            icon={<Sparkles className="h-4 w-4 text-emerald-400" />}
+            label="Dying 2.0 Design System"
+            onClick={() => onNavigate('/dying')}
+          />
+        )}
       </SidebarFooter>
     </Sidebar>
   );
