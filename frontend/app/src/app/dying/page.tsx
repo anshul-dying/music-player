@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, notFound } from 'next/navigation';
 import {
   ArrowLeft,
   Music,
@@ -185,6 +185,10 @@ function DyingPortalContent() {
 }
 
 export default function DyingPage() {
+  if (process.env.NODE_ENV !== 'development') {
+    notFound();
+  }
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
       <DyingPortalContent />
