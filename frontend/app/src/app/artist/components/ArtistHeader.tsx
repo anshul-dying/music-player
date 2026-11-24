@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Play, Pause, Shuffle, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Pause, Shuffle, Radio, Share2, Check, Users } from 'lucide-react';
 import {
   Box,
   Flex,
@@ -18,14 +18,31 @@ export interface ArtistHeaderProps {
   artist: ArtistDetails;
   isThisArtistPlaying: boolean;
   onPlayAll: (shuffle?: boolean) => void;
+  onRadio?: () => void;
+  onShare?: () => void;
 }
 
 export function ArtistHeader({
   artist,
   isThisArtistPlaying,
   onPlayAll,
+  onRadio,
+  onShare,
 }: ArtistHeaderProps) {
+  const [copied, setCopied] = useState(false);
   const heroImage = artist.bannerUrl || artist.avatarUrl || '';
+
+  const handleShare = () => {
+    if (onShare) {
+      onShare();
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <Box className="relative h-64 sm:h-80 md:h-96 rounded-3xl overflow-hidden border border-border-subtle bg-surface mb-10 shadow-2xl">
@@ -70,32 +87,53 @@ export function ArtistHeader({
           )}
         </Stack>
 
-        <Flex align="center" gap="3" className="shrink-0">
+        <Flex align="center" gap="3" className="shrink-0 flex-wrap">
           <Button
             variant="primary"
             size="lg"
-            className="rounded-full shadow-xl shadow-white/10"
+            className="rounded-full font-bold px-7 shadow-xl shadow-white/10 hover:scale-105 active:scale-95 transition-all"
+            leftIcon={
+              isThisArtistPlaying ? (
+                <Pause size={18} className="fill-current" />
+              ) : (
+                <Play size={18} className="fill-current ml-0.5" />
+              )
+            }
             onClick={() => onPlayAll(false)}
           >
-            {isThisArtistPlaying ? (
-              <>
-                <Pause size={18} className="fill-current mr-2" />
-                Pause
-              </>
-            ) : (
-              <>
-                <Play size={18} className="fill-current mr-2" />
-                Play All
-              </>
-            )}
+            {isThisArtistPlaying ? 'Pause' : 'Play all'}
           </Button>
-          <IconButton
-            aria-label="Shuffle play"
-            variant="secondary"
-            size="md"
-            className="rounded-full"
-            icon={<Shuffle size={18} />}
+
+          <Button
+            variant="glass"
+            size="lg"
+            className="rounded-full font-semibold px-5 hover:scale-105 active:scale-95 transition-all"
+            leftIcon={<Shuffle size={18} />}
             onClick={() => onPlayAll(true)}
+          >
+            Shuffle
+          </Button>
+
+          {onRadio && (
+            <Button
+              variant="glass"
+              size="lg"
+              className="rounded-full font-semibold px-5 hover:scale-105 active:scale-95 transition-all"
+              leftIcon={<Radio size={18} />}
+              onClick={onRadio}
+            >
+              Radio
+            </Button>
+          )}
+
+          <IconButton
+            aria-label="Share artist"
+            variant="glass"
+            shape="circle"
+            size="lg"
+            className="hover:scale-105 active:scale-95 transition-all"
+            icon={copied ? <Check size={19} className="text-emerald-400" /> : <Share2 size={19} />}
+            onClick={handleShare}
           />
         </Flex>
       </div>

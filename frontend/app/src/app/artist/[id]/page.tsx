@@ -105,6 +105,13 @@ export default function ArtistPage() {
     playTrack(songs[0]);
   };
 
+  const handleRadio = () => {
+    if (!artist || artist.topSongs.length === 0) return;
+    const songs = [...artist.topSongs];
+    setQueue(songs, 0, false);
+    playTrack(songs[0]);
+  };
+
   const handleTrackSelect = (track: Track, index: number) => {
     if (!artist) return;
     const isCurrent = currentTrack && (currentTrack.videoId === track.videoId || currentTrack.id === track.id);
@@ -156,6 +163,7 @@ export default function ArtistPage() {
         artist={artist}
         isThisArtistPlaying={isThisArtistPlaying}
         onPlayAll={handlePlayAll}
+        onRadio={handleRadio}
       />
 
       {/* Top Songs */}
