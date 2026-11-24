@@ -72,9 +72,15 @@ export const AmbientAura: React.FC<AmbientAuraProps> = ({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let animId: number;
+    let animId: number | undefined;
     let width = (canvas.width = canvas.parentElement?.clientWidth || 800);
     let height = (canvas.height = canvas.parentElement?.clientHeight || 600);
+
+    const reducedMotionQuery =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
+    let shouldAnimate = animated && !(reducedMotionQuery?.matches ?? false);
 
     const handleResize = () => {
       if (!canvas.parentElement) return;
@@ -128,7 +134,7 @@ export const AmbientAura: React.FC<AmbientAuraProps> = ({
       orbs[2].color = resolvedTertiary;
 
       orbs.forEach((orb, i) => {
-        if (animated) {
+        if (shouldAnimate) {
           orb.x += Math.sin(t * 0.001 + i) * orb.vx * 2;
           orb.y += Math.cos(t * 0.0012 + i) * orb.vy * 2;
         }
@@ -155,15 +161,29 @@ export const AmbientAura: React.FC<AmbientAuraProps> = ({
 
       ctx.globalAlpha = 1;
       t += 16;
-      if (animated) {
+      if (shouldAnimate) {
         animId = requestAnimationFrame(render);
       }
     };
 
+    const handleReducedMotionChange = (event: MediaQueryListEvent) => {
+      shouldAnimate = animated && !event.matches;
+      if (!shouldAnimate && animId !== undefined) {
+        cancelAnimationFrame(animId);
+        animId = undefined;
+      } else if (shouldAnimate && animId === undefined) {
+        animId = requestAnimationFrame(render);
+      }
+    };
+
+    reducedMotionQuery?.addEventListener("change", handleReducedMotionChange);
     render();
 
     return () => {
-      cancelAnimationFrame(animId);
+      if (animId !== undefined) {
+        cancelAnimationFrame(animId);
+      }
+      reducedMotionQuery?.removeEventListener("change", handleReducedMotionChange);
       window.removeEventListener("resize", handleResize);
     };
   }, [primaryColor, secondaryColor, tertiaryColor, intensity, animated]);

@@ -1,3 +1,4 @@
+@import "./src/styles/elevation-and-states.css";
 @source "./src";
 
 @theme {
@@ -19,6 +20,12 @@
   --color-canvas: var(--canvas, #141416);
   --color-sidebar: var(--sidebar, #121214);
   --color-surface: var(--surface, #1e1e22);
+  --color-surface-0: var(--surface-0, #141416);
+  --color-surface-1: var(--surface-1, #1a1a1e);
+  --color-surface-2: var(--surface-2, #1e1e22);
+  --color-surface-3: var(--surface-3, #252529);
+  --color-surface-4: var(--surface-4, #2c2c2e);
+  --color-surface-tint: var(--surface-tint, rgba(255, 106, 77, 0.08));
   --color-surface-hover: var(--surface-hover, #28282c);
   --color-surface-active: var(--surface-active, #2c2c2e);
   --color-border-subtle: var(--border-subtle, rgba(255, 255, 255, 0.08));
@@ -44,6 +51,7 @@
 
   /* Brand Colors (GaneGan Identity) */
   --color-brand-primary: var(--brand-primary, #FF6A4D);
+  --color-brand-on-primary: var(--brand-on-primary, #ffffff);
   --color-brand-hover: var(--brand-hover, #ff856c);
   --color-brand-subtle: var(--brand-subtle, rgba(255, 106, 77, 0.15));
   --color-brand-glow: var(--brand-glow, rgba(255, 106, 77, 0.25));
@@ -220,7 +228,7 @@
   }
 }
 
-/* Apple Music Sleek Dark Overlay Scrollbar */
+/* Apple Music Sleek Overlay Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -229,21 +237,21 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in oklch, var(--text-primary, #ffffff) 16%, transparent);
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: color-mix(in oklch, var(--text-primary, #ffffff) 35%, transparent);
   background-clip: content-box;
 }
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  scrollbar-color: color-mix(in oklch, var(--text-primary, #ffffff) 16%, transparent) transparent;
 }
 
-/* Dark Mode Autofill Consistency */
+/* Theme-Aware Autofill Consistency */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -256,9 +264,24 @@ select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus,
 select:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px #1e1e22 inset !important;
-  -webkit-text-fill-color: #ffffff !important;
-  caret-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--surface, #1e1e22) inset !important;
+  -webkit-text-fill-color: var(--text-primary, #ffffff) !important;
+  caret-color: var(--text-primary, #ffffff) !important;
   transition: background-color 5000s ease-in-out 0s;
-  color-scheme: dark !important;
+  color-scheme: dark;
+}
+
+[data-theme="light"] input:-webkit-autofill,
+[data-theme="light"] input:-webkit-autofill:hover,
+[data-theme="light"] input:-webkit-autofill:focus,
+[data-theme="light"] input:-webkit-autofill:active,
+[data-theme="light"] textarea:-webkit-autofill,
+[data-theme="light"] textarea:-webkit-autofill:hover,
+[data-theme="light"] textarea:-webkit-autofill:focus,
+[data-theme="light"] textarea:-webkit-autofill:active,
+[data-theme="light"] select:-webkit-autofill,
+[data-theme="light"] select:-webkit-autofill:hover,
+[data-theme="light"] select:-webkit-autofill:focus,
+[data-theme="light"] select:-webkit-autofill:active {
+  color-scheme: light;
 }

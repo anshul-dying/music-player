@@ -20,6 +20,11 @@ export interface AppShellProps extends React.HTMLAttributes<HTMLDivElement> {
   playerDock?: React.ReactNode;
 
   /**
+   * Mobile bottom navigation bar slot (rendered on < md viewports).
+   */
+  bottomNav?: React.ReactNode;
+
+  /**
    * Bottom player dock variant: 'floating' (default) or 'docked' (full-width bottom bar).
    */
   playerDockVariant?: 'floating' | 'docked';
@@ -61,6 +66,7 @@ export const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
       sidebar,
       header,
       playerDock,
+      bottomNav,
       playerDockVariant = 'floating',
       isFullBleed = false,
       overlay,
@@ -110,7 +116,7 @@ export const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
                   <RadixDialog.Close asChild>
                     <button
                       type="button"
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+                      className="dying-touch-target flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--state-hover)] text-text-primary hover:bg-[var(--state-pressed)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                       aria-label="Close navigation menu"
                     >
                       <X className="h-4 w-4" />
@@ -141,12 +147,12 @@ export const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+                className="dying-touch-target flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--state-hover)] text-text-primary hover:bg-[var(--state-pressed)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                 aria-label="Open navigation menu"
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <div className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
+              <div className="text-sm font-semibold tracking-tight text-text-primary flex items-center gap-2">
                 <span>GaneGan</span>
               </div>
               <div className="w-9" aria-hidden="true" />
@@ -173,6 +179,10 @@ export const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
                 isFullBleed
                   ? "w-full h-full p-0"
                   : "w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-6 md:py-8",
+                !isFullBleed &&
+                  bottomNav &&
+                  playerDockVariant === "floating" &&
+                  "pb-40 md:pb-28",
                 stageClassName
               )}
             >
@@ -180,15 +190,17 @@ export const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
             </div>
 
             {/* Bottom spacer ensuring scrollable content clears the player dock */}
-            {playerDock && !isFullBleed && (
-              <div
-                className={cn(
-                  "w-full shrink-0",
-                  playerDockVariant === "docked" ? "h-24" : "h-28 sm:h-32"
-                )}
-                aria-hidden="true"
-              />
-            )}
+            {playerDock &&
+              !isFullBleed &&
+              !(bottomNav && playerDockVariant === "floating") && (
+                <div
+                  className={cn(
+                    "w-full shrink-0",
+                    playerDockVariant === "docked" ? "h-24" : "h-28 sm:h-32"
+                  )}
+                  aria-hidden="true"
+                />
+              )}
           </main>
         </div>
 
@@ -199,12 +211,17 @@ export const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
               "z-40 flex",
               playerDockVariant === "docked"
                 ? "fixed bottom-0 inset-x-0 w-full"
-                : "pointer-events-none fixed bottom-3 sm:bottom-6 inset-x-0 justify-center px-2 sm:px-4"
+                : bottomNav
+                  ? "pointer-events-none fixed bottom-20 md:bottom-6 inset-x-0 justify-center px-2 sm:px-4"
+                  : "pointer-events-none fixed bottom-3 sm:bottom-6 inset-x-0 justify-center px-2 sm:px-4"
             )}
           >
             {playerDock}
           </div>
         )}
+
+        {/* Mobile Bottom Navigation Slot */}
+        {bottomNav && <div className="md:hidden">{bottomNav}</div>}
 
         {/* Full Immersion Overlay Slot (e.g. Synced Lyrics / Modals) */}
         {overlay && (

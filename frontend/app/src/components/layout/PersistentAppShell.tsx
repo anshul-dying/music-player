@@ -6,6 +6,7 @@ import {
   AppShell,
   FloatingPlayerPill,
   FullPlayerView,
+  useToast,
   type TrackData,
 } from '@mp/dying';
 import { usePlayerStore, type Track } from '../../stores/playerStore';
@@ -16,6 +17,9 @@ import { useMediaSession, useKeyboardShortcuts, useUrlSync, useYouTubeSyncInit, 
 import { ShellHeader } from './ShellHeader';
 import { ShellSidebar } from './ShellSidebar';
 import { ShellModals } from './ShellModals';
+import { ShellBottomNav } from './ShellBottomNav';
+import { ShellCommandPalette } from './ShellCommandPalette';
+import { ShellDynamicAccentSync } from './ShellDynamicAccentSync';
 import { handleRelatedSelection } from './fullPlayerHandlers';
 
 export interface PersistentAppShellProps {
@@ -51,43 +55,16 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
 
   // Stores
   const { user, isAuthenticated } = useAuthStore();
+  const { toast } = useToast();
   const {
-    currentTrack,
-    currentIndex,
-    playbackState,
-    currentTime,
-    duration,
-    bufferedPercent,
-    volume,
-    isMuted,
-    queue,
-    isShuffle,
-    repeatMode,
-    lyrics,
-    isLyricsLoading,
-    related,
-    relatedForVideoId,
-    togglePlay,
-    seek,
-    setVolume,
-    toggleMute,
-    next,
-    previous,
-    toggleShuffle,
-    toggleRepeat,
-    initialize,
-    removeFromQueue,
-    play,
-    playTrack,
-    fetchRelated,
+    currentTrack, currentIndex, playbackState, currentTime, duration,
+    bufferedPercent, volume, isMuted, queue, isShuffle, repeatMode,
+    lyrics, isLyricsLoading, related, relatedForVideoId,
+    togglePlay, seek, setVolume, toggleMute, next, previous,
+    toggleShuffle, toggleRepeat, initialize, removeFromQueue, play,
+    playTrack, fetchRelated,
   } = usePlayerStore();
-
-  const {
-    playlists,
-    fetchLibrary,
-    toggleLike,
-    isLiked,
-  } = useLibraryStore();
+  const { playlists, fetchLibrary, toggleLike, isLiked } = useLibraryStore();
 
   useUrlSync({
     isFullPlayerOpen,
@@ -159,6 +136,17 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
     [isLiked]
   );
 
+  const handleToggleCurrentLike = useCallback(() => {
+    if (!currentTrack) return;
+    const wasLiked = isLiked(currentTrack.videoId || currentTrack.id);
+    toggleLike(currentTrack);
+    toast({
+      title: wasLiked ? 'Removed from Liked Songs' : 'Added to Liked Songs',
+      description: currentTrack.title,
+      variant: wasLiked ? 'default' : 'success',
+    });
+  }, [currentTrack, isLiked, toggleLike, toast]);
+
   const isCurrentlyPlaying = playbackState === 'playing';
 
   const isAuthRoute = pathname === '/login' || pathname === '/register';
@@ -168,6 +156,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
 
   return (
     <>
+      <ShellDynamicAccentSync />
       <AppShell
         sidebar={
           isFullPlayerOpen ? null : (
@@ -177,6 +166,11 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
               onNavigate={(path) => router.push(path)}
               onCreatePlaylist={() => setIsCreatePlaylistOpen(true)}
             />
+          )
+        }
+        bottomNav={
+          isFullPlayerOpen ? null : (
+            <ShellBottomNav pathname={pathname} onNavigate={(path) => router.push(path)} />
           )
         }
         header={
@@ -213,7 +207,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
               isShuffle={isShuffle}
               repeatMode={repeatMode}
               isLiked={isLiked(currentTrack.videoId || currentTrack.id)}
-              onToggleLike={() => toggleLike(currentTrack)}
+              onToggleLike={handleToggleCurrentLike}
               onPlayPause={togglePlay}
               onPrevious={previous}
               onNext={next}
@@ -260,11 +254,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
                 startTransition(() => router.push(route));
               })
             }
-            onLikeToggle={() => {
-              if (currentTrack) {
-                toggleLike(currentTrack);
-              }
-            }}
+            onLikeToggle={handleToggleCurrentLike}
             onSelectTrack={(t) => {
               const idx = queue.findIndex((x) => (x.id || x.videoId) === t.id);
               if (idx !== -1) {
@@ -286,6 +276,11 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
         )}
       </AppShell>
 
+      <ShellCommandPalette
+        onNavigate={(path) => router.push(path)}
+        onToggleLyrics={handleToggleLyrics}
+        onOpenPlaybackOptions={() => setIsPlaybackOptionsOpen(true)}
+      />
       <ShellModals
         isCreatePlaylistOpen={isCreatePlaylistOpen}
         setIsCreatePlaylistOpen={setIsCreatePlaylistOpen}
