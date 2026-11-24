@@ -283,6 +283,13 @@ export {
   type ThemeContextValue,
 } from "./ThemeProvider";
 
+export {
+  extractDynamicPalette,
+  computeDynamicPaletteFromHex,
+  getContrastRatio,
+  type DynamicPalette,
+} from "./dynamicColor";
+
 export type PrimitiveTokens = typeof primitiveTokens;
 export type SemanticTokens = typeof semanticTokens;
 export type ComponentTokens = typeof componentTokens;

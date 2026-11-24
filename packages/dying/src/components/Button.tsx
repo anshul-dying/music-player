@@ -3,7 +3,7 @@ import { cn } from "../utils/cn";
 import { Spinner } from "./Spinner";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "glass" | "ghost" | "outline" | "danger" | "pill";
+  variant?: "primary" | "accent" | "secondary" | "glass" | "ghost" | "outline" | "danger" | "pill";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   isLoading?: boolean;
   loadingText?: string;
@@ -14,15 +14,17 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantStyles = {
   primary:
-    "bg-white text-black font-semibold hover:bg-neutral-200 active:bg-neutral-300 shadow-md shadow-black/30",
+    "bg-text-primary text-text-inverse font-semibold hover:opacity-90 active:opacity-80 shadow-md shadow-black/30",
+  accent:
+    "bg-brand-primary text-brand-on-primary font-semibold hover:bg-brand-hover shadow-md shadow-brand-glow",
   secondary:
     "bg-surface-active text-text-primary font-medium hover:bg-surface-hover active:bg-surface border border-border-subtle",
   glass:
     "bg-glass-frosted text-text-primary font-medium backdrop-blur-xl border border-border-subtle hover:bg-surface-hover hover:border-border-muted shadow-md shadow-black/40 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/[0.2] before:to-transparent",
   ghost:
-    "bg-transparent text-text-secondary hover:text-text-primary hover:bg-white/[0.06] active:bg-white/[0.1]",
+    "bg-transparent text-text-secondary hover:text-text-primary hover:bg-[var(--state-hover)] active:bg-[var(--state-pressed)]",
   outline:
-    "border border-border-muted bg-transparent text-text-primary hover:bg-white/[0.05] hover:border-white/[0.2] active:bg-white/[0.08]",
+    "border border-border-muted bg-transparent text-text-primary hover:bg-[var(--state-hover)] hover:border-border-focus active:bg-[var(--state-pressed)]",
   danger:
     "bg-status-error text-white font-semibold hover:bg-rose-600 active:bg-rose-700 shadow-md shadow-rose-950/40",
   pill:
@@ -63,7 +65,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         disabled={isDisabled}
         className={cn(
-          "relative inline-flex items-center justify-center font-medium transition-all duration-200 select-none cursor-pointer whitespace-nowrap",
+          "dying-touch-target relative inline-flex items-center justify-center font-medium transition-all duration-200 select-none cursor-pointer whitespace-nowrap",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
           "active:scale-[0.98]",
           variantStyles[variant],

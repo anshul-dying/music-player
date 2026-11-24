@@ -6,7 +6,7 @@ export interface IconButtonProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   icon: React.ReactNode;
   "aria-label": string;
-  variant?: "primary" | "secondary" | "glass" | "ghost" | "outline" | "danger";
+  variant?: "primary" | "accent" | "secondary" | "glass" | "ghost" | "outline" | "danger";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   shape?: "rounded" | "circle";
   isLoading?: boolean;
@@ -14,15 +14,17 @@ export interface IconButtonProps
 
 const variantStyles = {
   primary:
-    "bg-white text-black font-semibold hover:bg-neutral-200 active:bg-neutral-300 shadow-md shadow-black/30",
+    "bg-text-primary text-text-inverse font-semibold hover:opacity-90 active:opacity-80 shadow-md shadow-black/30",
+  accent:
+    "bg-brand-primary text-brand-on-primary font-semibold hover:bg-brand-hover shadow-md shadow-brand-glow",
   secondary:
     "bg-surface-active text-text-primary hover:bg-surface-hover active:bg-surface border border-border-subtle",
   glass:
     "bg-glass-frosted text-text-primary backdrop-blur-xl border border-border-subtle hover:bg-surface-hover hover:border-border-muted shadow-md shadow-black/40 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/[0.2] before:to-transparent",
   ghost:
-    "bg-transparent text-text-secondary hover:text-text-primary hover:bg-white/[0.06] active:bg-white/[0.1]",
+    "bg-transparent text-text-secondary hover:text-text-primary hover:bg-[var(--state-hover)] active:bg-[var(--state-pressed)]",
   outline:
-    "border border-border-muted bg-transparent text-text-primary hover:bg-white/[0.05] hover:border-white/[0.2] active:bg-white/[0.08]",
+    "border border-border-muted bg-transparent text-text-primary hover:bg-[var(--state-hover)] hover:border-border-focus active:bg-[var(--state-pressed)]",
   danger:
     "bg-status-error text-white hover:bg-rose-600 active:bg-rose-700 shadow-md shadow-rose-950/40",
 };
@@ -77,7 +79,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         disabled={isDisabled}
         aria-label={ariaLabel}
         className={cn(
-          "relative inline-flex items-center justify-center transition-all duration-200 select-none cursor-pointer shrink-0",
+          "dying-touch-target relative inline-flex items-center justify-center transition-all duration-200 select-none cursor-pointer shrink-0",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
           "active:scale-[0.94]",
           variantStyles[variant],

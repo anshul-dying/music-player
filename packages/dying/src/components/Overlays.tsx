@@ -59,7 +59,7 @@ export const DialogOverlay = React.forwardRef<
   <RadixDialog.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-canvas/80 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -86,7 +86,7 @@ export const DialogContent = React.forwardRef<
     >
       {children}
       {showCloseButton && (
-        <RadixDialog.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-text-secondary opacity-70 transition-opacity hover:opacity-100 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus">
+        <RadixDialog.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-text-secondary opacity-70 transition-opacity hover:opacity-100 hover:bg-[var(--state-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </RadixDialog.Close>

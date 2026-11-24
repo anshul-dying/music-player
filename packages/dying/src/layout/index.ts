@@ -17,3 +17,9 @@ export {
   FloatingPlayerPill,
   type FloatingPlayerPillProps,
 } from "./FloatingPlayerPill";
+export {
+  BottomNav,
+  type BottomNavProps,
+  BottomNavItem,
+  type BottomNavItemProps,
+} from "./BottomNav";

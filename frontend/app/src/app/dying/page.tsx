@@ -27,6 +27,7 @@ import { MathSection } from './components/MathSection';
 import { TokensSection } from './components/TokensSection';
 import { ChecklistSection } from './components/ChecklistSection';
 import { MusicSection } from './components/MusicSection';
+import { Material3ShowcaseSection } from './components/Material3ShowcaseSection';
 
 function DyingPortalContent() {
   const router = useRouter();
@@ -34,7 +35,7 @@ function DyingPortalContent() {
 
   // Tab state synced with URL search params
   const tabParam = searchParams.get('tab');
-  const validTabs = ['components', 'math', 'tokens', 'checklist', 'audio'];
+  const validTabs = ['components', 'material3', 'math', 'tokens', 'checklist', 'audio'];
   const initialTab = validTabs.includes(tabParam || '') ? tabParam! : 'components';
   const [activeTab, setActiveTab] = useState<string>(initialTab);
 
@@ -122,6 +123,14 @@ function DyingPortalContent() {
               Components & Primitives
             </Button>
             <Button
+              variant={activeTab === 'material3' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => handleTabChange('material3')}
+              leftIcon={<Disc size={14} />}
+            >
+              Material 3 & Adaptive
+            </Button>
+            <Button
               variant={activeTab === 'math' ? 'primary' : 'ghost'}
               size="sm"
               onClick={() => handleTabChange('math')}
@@ -175,6 +184,7 @@ function DyingPortalContent() {
         </section>
 
         {activeTab === 'components' && <ComponentsSection />}
+        {activeTab === 'material3' && <Material3ShowcaseSection />}
         {activeTab === 'math' && <MathSection currentTheme={currentTheme} />}
         {activeTab === 'tokens' && <TokensSection />}
         {activeTab === 'checklist' && <ChecklistSection />}
