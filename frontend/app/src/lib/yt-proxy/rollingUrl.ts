@@ -64,11 +64,56 @@ export function selectItagUrl(streamingData: unknown, itag: number): string | nu
   return match?.url ?? null;
 }
 
+const ROLLING_CLIENTS = [
+  {
+    name: 'IOS',
+    userAgent: IOS_USER_AGENT,
+    client: {
+      clientName: 'iOS',
+      clientVersion: '20.11.6',
+      hl: 'en',
+      gl: 'US',
+      deviceMake: 'Apple',
+      osName: 'iOS',
+      platform: 'MOBILE',
+    },
+  },
+  {
+    name: 'VISIONOS',
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+    client: {
+      clientName: 'VISIONOS',
+      clientVersion: '0.1',
+      hl: 'en',
+      gl: 'US',
+      deviceMake: 'Apple',
+      osName: 'visionOS',
+      platform: 'MOBILE',
+    },
+  },
+  {
+    name: 'TVHTML5',
+    userAgent: 'Mozilla/5.0 (SMART-TV; LINUX; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 TV Safari/537.36',
+    client: {
+      clientName: 'TVHTML5',
+      clientVersion: '7.20260707.07.00',
+      hl: 'en',
+      gl: 'US',
+      deviceMake: 'Samsung',
+      deviceModel: 'SmartTV',
+      osName: 'Tizen',
+      platform: 'TV',
+    },
+  },
+] as const;
+
 export async function getFreshRollingUrl(
   videoId: string,
   itag: number,
   startByte: number,
-  cache: RollingUrlCache = rollingUrlCache
+  cache: RollingUrlCache = rollingUrlCache,
+  _preferFallback = ''
 ): Promise<string | null> {
   if (!isValidVideoId(videoId)) return null;
 
@@ -79,35 +124,30 @@ export async function getFreshRollingUrl(
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
-  try {
-    const res = await fetch(PLAYER_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain', 'User-Agent': IOS_USER_AGENT },
-      body: JSON.stringify({
-        context: {
-          client: {
-            clientName: 'iOS',
-            clientVersion: '20.11.6',
-            hl: 'en',
-            gl: 'US',
-            deviceMake: 'Apple',
-            osName: 'iOS',
-            platform: 'MOBILE',
-          },
-        },
-        videoId,
-        contentCheckOk: true,
-        racyCheckOk: true,
-        startTimeSecs: estimatedSec,
-      }),
-    });
-    if (!res.ok) return null;
+  for (const candidate of ROLLING_CLIENTS) {
+    try {
+      const res = await fetch(PLAYER_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain', 'User-Agent': candidate.userAgent },
+        body: JSON.stringify({
+          context: { client: candidate.client },
+          videoId,
+          contentCheckOk: true,
+          racyCheckOk: true,
+          startTimeSecs: estimatedSec,
+        }),
+      });
+      if (!res.ok) continue;
 
-    const data = await res.json();
-    const url = selectItagUrl(data.streamingData, itag);
-    if (url) cache.set(cacheKey, url);
-    return url;
-  } catch {
-    return null;
+      const data = await res.json();
+      const url = selectItagUrl(data.streamingData, itag);
+      if (url) {
+        cache.set(cacheKey, url);
+        return url;
+      }
+    } catch {
+      // Try next client
+    }
   }
+  return null;
 }

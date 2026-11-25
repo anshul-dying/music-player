@@ -12,7 +12,7 @@ import { mockNextResponse } from './fixtures/mockNextRadio';
 describe('InnerTube Client & Parsers', () => {
   it('defines InnerTube contexts with correct specifications', () => {
     assert.equal(INNERTUBE_CONTEXTS.VISIONOS.client.clientName, 'VISIONOS');
-    assert.equal(INNERTUBE_CONTEXTS.VISIONOS.client.clientVersion, '1.02');
+    assert.equal(INNERTUBE_CONTEXTS.VISIONOS.client.clientVersion, '0.1');
     assert.equal(INNERTUBE_CONTEXTS.IOS.client.clientName, 'iOS');
     assert.equal(INNERTUBE_CONTEXTS.ANDROID_MUSIC.client.clientName, 'ANDROID_MUSIC');
     assert.equal(INNERTUBE_CONTEXTS.ANDROID_MUSIC.client.clientVersion, '6.40.52');
