@@ -26,6 +26,25 @@ export function bindEngineEvents(engine: PlayerEngine, set: StoreSet, get: Store
   }
 
   let lastTrackVideoId: string | null = null;
+  let pendingRadioVideoId: string | null = null;
+  let pendingRadioPromise: Promise<unknown> | null = null;
+
+  const ensureRadioTracks = (videoId: string) => {
+    if (pendingRadioVideoId === videoId && pendingRadioPromise) {
+      return pendingRadioPromise;
+    }
+    pendingRadioVideoId = videoId;
+    const promise = get()
+      .getNextRadio(videoId)
+      .finally(() => {
+        if (pendingRadioPromise === promise) {
+          pendingRadioVideoId = null;
+          pendingRadioPromise = null;
+        }
+      });
+    pendingRadioPromise = promise;
+    return promise;
+  };
 
   engine.on('trackChange', (track, index) => {
     const isSameVideo = Boolean(track?.videoId && lastTrackVideoId === track.videoId);
@@ -55,6 +74,15 @@ export function bindEngineEvents(engine: PlayerEngine, set: StoreSet, get: Store
 
     if (track && (!isSameVideo || !get().lyrics)) {
       debouncedFetchLyrics(track, get().fetchLyrics);
+    }
+
+    if (
+      track?.videoId &&
+      get().infiniteRadio &&
+      get().repeatMode === 'off' &&
+      index >= engine.getQueue().length - 1
+    ) {
+      ensureRadioTracks(track.videoId).catch(() => {});
     }
   });
 
@@ -91,6 +119,24 @@ export function bindEngineEvents(engine: PlayerEngine, set: StoreSet, get: Store
     if (get().sleepTimerMode === 'end_of_track') {
       get().pause().catch(() => {});
       set({ sleepTimerMode: 'off', sleepTimerRemaining: null });
+      return;
+    }
+    if (get().infiniteRadio && get().repeatMode === 'off' && !engine.hasNext()) {
+      const track = get().currentTrack || engine.getCurrentTrack();
+      if (track?.videoId) {
+        ensureRadioTracks(track.videoId)
+          .then(() => {
+            if (
+              get().playbackState === 'ended' &&
+              get().infiniteRadio &&
+              get().repeatMode === 'off' &&
+              engine.hasNext()
+            ) {
+              return get().next();
+            }
+          })
+          .catch(() => {});
+      }
     }
   });
 }

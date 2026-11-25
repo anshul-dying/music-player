@@ -55,6 +55,7 @@ export interface PlayerStoreState {
   isMuted: boolean;
   repeatMode: RepeatMode;
   isShuffle: boolean;
+  infiniteRadio: boolean;
   queue: Track[];
 
   // Sleep Timer
@@ -97,6 +98,7 @@ export interface PlayerStoreState {
   toggleRepeat: () => void;
   setShuffle: (shuffle: boolean) => void;
   toggleShuffle: () => void;
+  toggleInfiniteRadio: (enabled?: boolean) => void;
   setPlaybackRate: (rate: number) => void;
   setSleepTimer: (mode: SleepTimerMode) => void;
   setQueue: (tracks: Track[], startIndex?: number, autoPlay?: boolean) => void;

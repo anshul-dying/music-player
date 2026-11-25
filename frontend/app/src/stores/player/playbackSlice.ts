@@ -35,6 +35,7 @@ export const createPlaybackSlice = (set: StoreSet, get: StoreGet) => ({
   isMuted: false,
   repeatMode: 'off' as RepeatMode,
   isShuffle: false,
+  infiniteRadio: true,
   sleepTimerMode: 'off' as SleepTimerMode,
   sleepTimerRemaining: null as number | null,
   lyrics: null as LyricsResponse | null,
@@ -191,6 +192,10 @@ export const createPlaybackSlice = (set: StoreSet, get: StoreGet) => ({
     const engine = get().engine || getSharedEngine();
     if (engine) {
       set({ currentTime: 0, bufferedAheadSeconds: 0, bufferedPercent: 0 });
+      if (!engine.hasNext() && get().infiniteRadio && get().repeatMode === 'off') {
+        const cur = get().currentTrack || engine.getCurrentTrack();
+        if (cur?.videoId) await get().getNextRadio(cur.videoId).catch(() => {});
+      }
       try {
         await engine.next();
       } catch (err: any) {
@@ -271,6 +276,10 @@ export const createPlaybackSlice = (set: StoreSet, get: StoreGet) => ({
 
   toggleShuffle: () => {
     get().setShuffle(!get().isShuffle);
+  },
+
+  toggleInfiniteRadio: (enabled?: boolean) => {
+    set({ infiniteRadio: typeof enabled === 'boolean' ? enabled : !get().infiniteRadio });
   },
 
   setPlaybackRate: (rate: number) => {

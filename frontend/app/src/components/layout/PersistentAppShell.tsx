@@ -63,10 +63,10 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   }, [setSpotifyToast, toast]);
   const {
     currentTrack, currentIndex, playbackState, currentTime, duration,
-    bufferedPercent, volume, isMuted, queue, isShuffle, repeatMode,
+    bufferedPercent, volume, isMuted, queue, isShuffle, repeatMode, infiniteRadio,
     lyrics, isLyricsLoading, related, relatedForVideoId,
     togglePlay, seek, setVolume, toggleMute, next, previous,
-    toggleShuffle, toggleRepeat, initialize, removeFromQueue, play,
+    toggleShuffle, toggleRepeat, toggleInfiniteRadio, initialize, removeFromQueue, play,
     playTrack, fetchRelated,
   } = usePlayerStore();
   const { playlists, fetchLibrary, toggleLike, isLiked } = useLibraryStore();
@@ -80,12 +80,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   useYouTubeSyncInit();
 
   useEffect(() => {
-    if (
-      isFullPlayerOpen &&
-      fullPlayerTab === 'related' &&
-      currentTrack?.videoId &&
-      relatedForVideoId !== currentTrack.videoId
-    ) {
+    if (isFullPlayerOpen && fullPlayerTab === 'related' && currentTrack?.videoId && relatedForVideoId !== currentTrack.videoId) {
       fetchRelated(currentTrack.videoId).catch(() => {});
     }
   }, [isFullPlayerOpen, fullPlayerTab, currentTrack?.videoId, relatedForVideoId, fetchRelated]);
@@ -100,15 +95,10 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   }, [isFullPlayerOpen, fullPlayerTab]);
 
   const handleCloseModals = useCallback(() => {
-    if (isAccountModalOpen) {
-      setIsAccountModalOpen(false);
-    } else if (isCreatePlaylistOpen) {
-      setIsCreatePlaylistOpen(false);
-    } else if (isAddToPlaylistOpen) {
-      closeAddToPlaylist();
-    } else if (isFullPlayerOpen) {
-      setIsFullPlayerOpen(false);
-    }
+    if (isAccountModalOpen) setIsAccountModalOpen(false);
+    else if (isCreatePlaylistOpen) setIsCreatePlaylistOpen(false);
+    else if (isAddToPlaylistOpen) closeAddToPlaylist();
+    else if (isFullPlayerOpen) setIsFullPlayerOpen(false);
   }, [isAccountModalOpen, isCreatePlaylistOpen, isAddToPlaylistOpen, isFullPlayerOpen, closeAddToPlaylist]);
 
   useKeyboardShortcuts({
@@ -250,6 +240,8 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
             queue={queue.map(getTrackDataWithLiked)}
             currentIndex={currentIndex}
             isShuffle={isShuffle}
+            infiniteRadio={infiniteRadio}
+            onToggleInfiniteRadio={toggleInfiniteRadio}
             lyrics={lyrics || undefined}
             isLyricsLoading={isLyricsLoading}
             related={related.map((item) => ({ ...item, thumbnailUrl: item.thumbnail }))}
