@@ -79,7 +79,7 @@ describe('getFreshRollingUrl', () => {
     const cache = new RollingUrlCache();
     assert.equal(await getFreshRollingUrl('ddddddddddd', 140, 0, cache), null);
     assert.equal(await getFreshRollingUrl('../../etc', 140, 0, cache), null);
-    assert.equal(stub.calls.length, 1);
+    assert.equal(stub.calls.length, 3);
   });
 });
 

@@ -30,7 +30,7 @@ export const INNERTUBE_CONTEXTS: Record<InnerTubeClientName, InnerTubeContext> =
   VISIONOS: {
     client: {
       clientName: 'VISIONOS',
-      clientVersion: '1.02',
+      clientVersion: '0.1',
       hl: 'en',
       gl: 'US',
       deviceMake: 'Apple',

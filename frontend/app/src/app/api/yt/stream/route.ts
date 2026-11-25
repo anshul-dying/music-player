@@ -40,7 +40,9 @@ async function handle(req: NextRequest, method: Method): Promise<NextResponse> {
     }
 
     const videoIdParam =
-      req.nextUrl.searchParams.get('v') || req.nextUrl.searchParams.get('videoId');
+      req.nextUrl.searchParams.get('v') ||
+      req.nextUrl.searchParams.get('_v') ||
+      req.nextUrl.searchParams.get('videoId');
     const videoId = isValidVideoId(videoIdParam) ? videoIdParam : '';
     const clientParam = target.url.searchParams.get('c') || '';
     const itagParam = parseInt(target.url.searchParams.get('itag') || '140', 10);
@@ -62,18 +64,19 @@ async function handle(req: NextRequest, method: Method): Promise<NextResponse> {
       upstreamRes = await fetchWithFallback(target.url.href, headers, req.signal);
     }
 
-    // 403 on a range request: mint a fresh URL for this window and retry once
-    if (upstreamRes.status === 403 && rangeHeader && videoId) {
-      const match = rangeHeader.match(/bytes=(\d+)-/);
+    // 403 on stream request: mint a fresh URL (preferring a different client) and retry once
+    if (upstreamRes.status === 403 && videoId && method === 'GET') {
+      const match = rangeHeader?.match(/bytes=(\d+)-/);
       const reqStart = match ? parseInt(match[1], 10) : 0;
-      const freshUrl = await getFreshRollingUrl(videoId, itagParam, reqStart);
+      const freshUrl = await getFreshRollingUrl(videoId, itagParam, reqStart, undefined, clientParam);
       const fresh = freshUrl ? parseStreamTarget(freshUrl) : null;
       if (fresh?.ok) {
-        const retryRes = await fetchFollowingRedirects(fresh.url.href, {
-          method: 'GET',
-          headers: getBaseHeaders(clientParam, rangeHeader),
-          signal: req.signal,
-        });
+        const freshClient = fresh.url.searchParams.get('c') || clientParam;
+        const retryRes = await fetchWithFallback(
+          fresh.url.href,
+          getBaseHeaders(freshClient, rangeHeader || undefined),
+          req.signal
+        );
         if (retryRes.ok) {
           await upstreamRes.body?.cancel();
           upstreamRes = retryRes;

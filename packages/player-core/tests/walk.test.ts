@@ -16,11 +16,11 @@ describe('Client Walk & VerdictCache', () => {
     cache.clear();
 
     assert.equal(cache.isBenched('ANDROID_MUSIC'), false);
-    assert.deepEqual(cache.getActiveClients(), ['IOS', 'VISIONOS', 'ANDROID_MUSIC', 'WEB_REMIX', 'WEB', 'MWEB']);
+    assert.deepEqual(cache.getActiveClients(), ['VISIONOS', 'IOS', 'ANDROID_MUSIC', 'WEB_REMIX', 'WEB', 'MWEB']);
 
     cache.bench('ANDROID_MUSIC', 'Playback restricted');
     assert.equal(cache.isBenched('ANDROID_MUSIC'), true);
-    assert.deepEqual(cache.getActiveClients(), ['IOS', 'VISIONOS', 'WEB_REMIX', 'WEB', 'MWEB']);
+    assert.deepEqual(cache.getActiveClients(), ['VISIONOS', 'IOS', 'WEB_REMIX', 'WEB', 'MWEB']);
 
     cache.unbench('ANDROID_MUSIC');
     assert.equal(cache.isBenched('ANDROID_MUSIC'), false);

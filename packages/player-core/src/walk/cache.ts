@@ -2,8 +2,8 @@ import { InnerTubeClientName } from '../types';
 import type { ClientWalkResult } from './clientWalk';
 
 export const CLIENT_WALK_PRIORITY: readonly InnerTubeClientName[] = [
-  'IOS',
   'VISIONOS',
+  'IOS',
   'ANDROID_MUSIC',
   'WEB_REMIX',
   'WEB',
