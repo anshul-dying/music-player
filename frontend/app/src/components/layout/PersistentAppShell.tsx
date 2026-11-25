@@ -21,7 +21,7 @@ import { ShellModals } from './ShellModals';
 import { ShellBottomNav } from './ShellBottomNav';
 import { ShellCommandPalette } from './ShellCommandPalette';
 import { ShellDynamicAccentSync } from './ShellDynamicAccentSync';
-import { handleRelatedSelection } from './fullPlayerHandlers';
+import { handleRelatedSelection, handleSaveQueueAsPlaylist } from './fullPlayerHandlers';
 
 export interface PersistentAppShellProps {
   children: React.ReactNode;
@@ -69,7 +69,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
     toggleShuffle, toggleRepeat, initialize, removeFromQueue, play,
     playTrack, fetchRelated,
   } = usePlayerStore();
-  const { playlists, fetchLibrary, toggleLike, isLiked } = useLibraryStore();
+  const { playlists, fetchLibrary, toggleLike, isLiked, createPlaylist, addTracksToPlaylist } = useLibraryStore();
 
   useUrlSync({
     isFullPlayerOpen,
@@ -80,12 +80,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   useYouTubeSyncInit();
 
   useEffect(() => {
-    if (
-      isFullPlayerOpen &&
-      fullPlayerTab === 'related' &&
-      currentTrack?.videoId &&
-      relatedForVideoId !== currentTrack.videoId
-    ) {
+    if (isFullPlayerOpen && fullPlayerTab === 'related' && currentTrack?.videoId && relatedForVideoId !== currentTrack.videoId) {
       fetchRelated(currentTrack.videoId).catch(() => {});
     }
   }, [isFullPlayerOpen, fullPlayerTab, currentTrack?.videoId, relatedForVideoId, fetchRelated]);
@@ -100,15 +95,10 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   }, [isFullPlayerOpen, fullPlayerTab]);
 
   const handleCloseModals = useCallback(() => {
-    if (isAccountModalOpen) {
-      setIsAccountModalOpen(false);
-    } else if (isCreatePlaylistOpen) {
-      setIsCreatePlaylistOpen(false);
-    } else if (isAddToPlaylistOpen) {
-      closeAddToPlaylist();
-    } else if (isFullPlayerOpen) {
-      setIsFullPlayerOpen(false);
-    }
+    if (isAccountModalOpen) setIsAccountModalOpen(false);
+    else if (isCreatePlaylistOpen) setIsCreatePlaylistOpen(false);
+    else if (isAddToPlaylistOpen) closeAddToPlaylist();
+    else if (isFullPlayerOpen) setIsFullPlayerOpen(false);
   }, [isAccountModalOpen, isCreatePlaylistOpen, isAddToPlaylistOpen, isFullPlayerOpen, closeAddToPlaylist]);
 
   useKeyboardShortcuts({
@@ -151,6 +141,10 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
       variant: wasLiked ? 'default' : 'success',
     });
   }, [currentTrack, isLiked, toggleLike, toast]);
+
+  const handleSaveQueue = useCallback(() => {
+    void handleSaveQueueAsPlaylist({ queue, currentTrack, createPlaylist, addTracksToPlaylist, toast });
+  }, [queue, currentTrack, createPlaylist, addTracksToPlaylist, toast]);
 
   const isCurrentlyPlaying = playbackState === 'playing';
 
@@ -250,6 +244,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
             queue={queue.map(getTrackDataWithLiked)}
             currentIndex={currentIndex}
             isShuffle={isShuffle}
+            onSaveQueue={handleSaveQueue}
             lyrics={lyrics || undefined}
             isLyricsLoading={isLyricsLoading}
             related={related.map((item) => ({ ...item, thumbnailUrl: item.thumbnail }))}
