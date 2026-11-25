@@ -2,6 +2,13 @@ import { RepeatMode, Track } from '../types';
 
 const MAX_HISTORY = 100;
 
+function isSameTrack(a: Track | undefined, b: Track | undefined): boolean {
+  if (!a || !b) return false;
+  const keyA = a.videoId || a.id;
+  const keyB = b.videoId || b.id;
+  return Boolean(keyA && keyB && keyA === keyB);
+}
+
 export class QueueManager {
   private queue: Track[] = [];
   private currentIndex = -1;
@@ -69,6 +76,9 @@ export class QueueManager {
   }
 
   addToQueue(track: Track): { isFirst: boolean } {
+    if (isSameTrack(this.queue[this.queue.length - 1], track)) {
+      return { isFirst: false };
+    }
     this.queue.push(track);
     this.played.push(false);
     if (this.currentIndex === -1) {
@@ -123,6 +133,12 @@ export class QueueManager {
 
   insertAfterCurrent(track: Track): number {
     const insertIdx = this.currentIndex + 1;
+    if (isSameTrack(this.queue[insertIdx - 1], track)) {
+      return insertIdx - 1;
+    }
+    if (isSameTrack(this.queue[insertIdx], track)) {
+      return insertIdx;
+    }
     this.queue.splice(insertIdx, 0, track);
     this.played.splice(insertIdx, 0, false);
     this.history = this.history.map((i) => (i >= insertIdx ? i + 1 : i));

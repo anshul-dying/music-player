@@ -162,3 +162,68 @@ describe('QueueManager shuffle', () => {
     assert.equal(queue.getNextIndex(), 0);
   });
 });
+
+describe('QueueManager consecutive deduplication', () => {
+  it('prevents adding the same track consecutively via addToQueue', () => {
+    const queue = new QueueManager();
+    assert.deepEqual(queue.addToQueue(track('a')), { isFirst: true });
+    assert.deepEqual(queue.addToQueue(track('a')), { isFirst: false });
+    assert.deepEqual(
+      queue.getQueue().map((t) => t.videoId),
+      ['a']
+    );
+  });
+
+  it('allows duplicate tracks in addToQueue when at least one different track is in between', () => {
+    const queue = new QueueManager();
+    queue.addToQueue(track('a'));
+    queue.addToQueue(track('b'));
+    queue.addToQueue(track('a'));
+    queue.addToQueue(track('a'));
+    assert.deepEqual(
+      queue.getQueue().map((t) => t.videoId),
+      ['a', 'b', 'a']
+    );
+  });
+
+  it('matches tracks by videoId even when id differs, and falls back to id when videoId is empty', () => {
+    const queue = new QueueManager();
+    queue.addToQueue({ ...track('a'), id: 'pl-1', videoId: 'vid-a' });
+    queue.addToQueue({ ...track('a'), id: 'pl-2', videoId: 'vid-a' });
+    queue.addToQueue({ ...track('b'), id: 'id-b', videoId: '' });
+    queue.addToQueue({ ...track('b'), id: 'id-b', videoId: '' });
+    assert.deepEqual(
+      queue.getQueue().map((t) => t.id),
+      ['pl-1', 'id-b']
+    );
+  });
+
+  it('prevents inserting the same track adjacent to current or next via insertAfterCurrent', () => {
+    const queue = new QueueManager();
+    queue.setQueue([track('a'), track('b')], 0);
+
+    assert.equal(queue.insertAfterCurrent(track('a')), 0);
+    assert.equal(queue.insertAfterCurrent(track('b')), 1);
+    assert.deepEqual(
+      queue.getQueue().map((t) => t.videoId),
+      ['a', 'b']
+    );
+
+    assert.equal(queue.insertAfterCurrent(track('c')), 1);
+    assert.deepEqual(
+      queue.getQueue().map((t) => t.videoId),
+      ['a', 'c', 'b']
+    );
+  });
+
+  it('allows insertAfterCurrent when duplicate is separated by at least one different track', () => {
+    const queue = new QueueManager();
+    queue.setQueue([track('a'), track('b')], 1);
+
+    assert.equal(queue.insertAfterCurrent(track('a')), 2);
+    assert.deepEqual(
+      queue.getQueue().map((t) => t.videoId),
+      ['a', 'b', 'a']
+    );
+  });
+});
