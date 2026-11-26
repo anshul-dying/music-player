@@ -21,7 +21,7 @@ import { ShellModals } from './ShellModals';
 import { ShellBottomNav } from './ShellBottomNav';
 import { ShellCommandPalette } from './ShellCommandPalette';
 import { ShellDynamicAccentSync } from './ShellDynamicAccentSync';
-import { handleRelatedSelection } from './fullPlayerHandlers';
+import { handleRelatedSelection, handleSaveQueueAsPlaylist } from './fullPlayerHandlers';
 
 export interface PersistentAppShellProps {
   children: React.ReactNode;
@@ -69,7 +69,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
     toggleShuffle, toggleRepeat, toggleInfiniteRadio, initialize, removeFromQueue, play,
     playTrack, fetchRelated,
   } = usePlayerStore();
-  const { playlists, fetchLibrary, toggleLike, isLiked } = useLibraryStore();
+  const { playlists, fetchLibrary, toggleLike, isLiked, createPlaylist, addTracksToPlaylist } = useLibraryStore();
 
   useUrlSync({
     isFullPlayerOpen,
@@ -141,6 +141,10 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
       variant: wasLiked ? 'default' : 'success',
     });
   }, [currentTrack, isLiked, toggleLike, toast]);
+
+  const handleSaveQueue = useCallback(() => {
+    void handleSaveQueueAsPlaylist({ queue, currentTrack, createPlaylist, addTracksToPlaylist, toast });
+  }, [queue, currentTrack, createPlaylist, addTracksToPlaylist, toast]);
 
   const isCurrentlyPlaying = playbackState === 'playing';
 
@@ -242,6 +246,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
             isShuffle={isShuffle}
             infiniteRadio={infiniteRadio}
             onToggleInfiniteRadio={toggleInfiniteRadio}
+            onSaveQueue={handleSaveQueue}
             lyrics={lyrics || undefined}
             isLyricsLoading={isLyricsLoading}
             related={related.map((item) => ({ ...item, thumbnailUrl: item.thumbnail }))}

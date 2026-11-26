@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "../components/Badge";
 import { cn } from "../utils/cn";
@@ -36,8 +36,10 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
   const activeLineRef = useRef<HTMLDivElement>(null);
   const [userIsScrolling, setUserIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const programmaticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isProgrammaticScrollRef = useRef(false);
   const hasInitialScrolledRef = useRef(false);
+  const wasHiddenRef = useRef(false);
   const lastLyricsRef = useRef(lyrics);
 
   if (lastLyricsRef.current !== lyrics) {
@@ -57,56 +59,135 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
       }, -1)
     : -1;
 
-  // Handle user manual scroll interruption (2.8s pause on user scroll)
-  const handleScroll = () => {
-    if (!isSynced) return;
-    if (isProgrammaticScrollRef.current) return;
+  const clearProgrammaticFlag = useCallback(() => {
+    isProgrammaticScrollRef.current = false;
+    if (programmaticTimerRef.current) {
+      clearTimeout(programmaticTimerRef.current);
+      programmaticTimerRef.current = null;
+    }
+  }, []);
 
-    setUserIsScrolling(true);
+  const clearUserScrollLock = useCallback(() => {
+    setUserIsScrolling(false);
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = null;
     }
-    scrollTimeoutRef.current = setTimeout(() => {
-      setUserIsScrolling(false);
-    }, 2800);
-  };
+  }, []);
+
+  const pauseAutoScrollForUser = useCallback(() => {
+    clearProgrammaticFlag();
+    setUserIsScrolling(true);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(clearUserScrollLock, 2800);
+  }, [clearProgrammaticFlag, clearUserScrollLock]);
+
+  const handleScroll = useCallback(() => {
+    if (!isSynced || isProgrammaticScrollRef.current) return;
+    pauseAutoScrollForUser();
+  }, [isSynced, pauseAutoScrollForUser]);
+
+  const scrollToActiveLine = useCallback(
+    (behavior: ScrollBehavior) => {
+      const container = containerRef.current;
+      const activeEl = activeLineRef.current;
+      if (!container || !activeEl || container.clientHeight === 0) return false;
+
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeEl.getBoundingClientRect();
+      const relativeTop = activeRect.top - containerRect.top + container.scrollTop;
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      const targetTop = Math.min(
+        maxScrollTop,
+        Math.max(0, relativeTop - container.clientHeight / 2 + activeRect.height / 2)
+      );
+
+      if (Math.abs(container.scrollTop - targetTop) < 1) return true;
+
+      clearProgrammaticFlag();
+      isProgrammaticScrollRef.current = true;
+      container.scrollTo({ top: targetTop, behavior });
+      // Fallback clear in case scrollend does not fire (e.g. instant scroll or older browser)
+      programmaticTimerRef.current = setTimeout(clearProgrammaticFlag, behavior === "smooth" ? 900 : 80);
+      return true;
+    },
+    [clearProgrammaticFlag]
+  );
+
+  // Keep latest scroll state in a ref so ResizeObserver doesn't re-subscribe on every line
+  const scrollStateRef = useRef({ isSynced, autoScroll, userIsScrolling, activeIndex });
+  scrollStateRef.current = { isSynced, autoScroll, userIsScrolling, activeIndex };
+
+  useEffect(() => {
+    clearUserScrollLock();
+  }, [lyrics, clearUserScrollLock]);
 
   // Smooth auto-scroll to center the active line in synced mode
   useEffect(() => {
     if (!isSynced || !autoScroll || userIsScrolling || activeIndex === -1) return;
-    if (activeLineRef.current && containerRef.current) {
-      const isFirst = !hasInitialScrolledRef.current;
+    const isFirst = !hasInitialScrolledRef.current;
+    if (scrollToActiveLine(isFirst ? "auto" : "smooth")) {
       hasInitialScrolledRef.current = true;
-      isProgrammaticScrollRef.current = true;
-
-      activeLineRef.current.scrollIntoView({
-        behavior: isFirst ? "instant" : "smooth",
-        block: "center",
-      });
-
-      const timer = setTimeout(() => {
-        isProgrammaticScrollRef.current = false;
-      }, 350);
-
-      return () => {
-        clearTimeout(timer);
-      };
     }
-  }, [activeIndex, autoScroll, userIsScrolling, isSynced]);
+  }, [activeIndex, autoScroll, userIsScrolling, isSynced, scrollToActiveLine]);
+
+  // Listen for scrollend and container visibility transitions (e.g. switching to Lyrics tab)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.addEventListener("scrollend", clearProgrammaticFlag);
+    wasHiddenRef.current = container.clientHeight === 0;
+
+    let observer: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(() => {
+        if (container.clientHeight === 0) {
+          wasHiddenRef.current = true;
+          return;
+        }
+        if (wasHiddenRef.current) {
+          wasHiddenRef.current = false;
+          const s = scrollStateRef.current;
+          if (s.isSynced && s.autoScroll && !s.userIsScrolling && s.activeIndex !== -1) {
+            if (scrollToActiveLine("auto")) hasInitialScrolledRef.current = true;
+          }
+        }
+      });
+      observer.observe(container);
+    }
+
+    return () => {
+      container.removeEventListener("scrollend", clearProgrammaticFlag);
+      observer?.disconnect();
+    };
+  }, [isSynced, clearProgrammaticFlag, scrollToActiveLine]);
 
   useEffect(() => {
     return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
     };
   }, []);
+
+  const handleLineSeek = (time: number) => {
+    clearUserScrollLock();
+    onSeek?.(time);
+  };
 
   const formatLyricTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
     return `${mins}:${s < 10 ? "0" : ""}${s}`;
   };
+
+  const attributionFooter = (
+    <div className="pt-12 pb-8 flex justify-center">
+      <Badge variant="glass" size="xs">
+        Lyrics provided by {source || "LRCLIB"}
+      </Badge>
+    </div>
+  );
 
   // Empty state when neither synced lines nor plain lyrics exist
   if ((isSynced && !hasLyrics) || (!isSynced && !hasPlainLyrics && !hasLyrics)) {
@@ -141,19 +222,12 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
           <div className="mb-8">
             <Badge variant="glass">Unsynced Lyrics</Badge>
           </div>
-
           <div className="w-full text-center">
             <p className="whitespace-pre-line text-lg sm:text-xl font-medium text-text-secondary leading-loose tracking-wide">
               {displayPlain}
             </p>
           </div>
-
-          {/* Footer attribution */}
-          <div className="pt-12 pb-8 flex justify-center">
-            <Badge variant="glass" size="xs">
-              Lyrics provided by {source || "LRCLIB"}
-            </Badge>
-          </div>
+          {attributionFooter}
         </div>
       </div>
     );
@@ -164,8 +238,10 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
     <div
       ref={containerRef}
       onScroll={handleScroll}
+      onWheel={pauseAutoScrollForUser}
+      onTouchMove={pauseAutoScrollForUser}
       className={cn(
-        "relative flex h-full w-full flex-col overflow-y-auto px-6 py-32 scrollbar-none select-none scroll-smooth",
+        "relative flex h-full w-full flex-col overflow-y-auto px-6 py-32 scrollbar-none select-none",
         "mask-[linear-gradient(to_bottom,transparent_0%,black_15%,black_85%,transparent_100%)]",
         className
       )}
@@ -180,31 +256,20 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
             <motion.div
               key={line.id || `${line.time}-${index}`}
               ref={isActive ? activeLineRef : null}
-              onClick={() => onSeek?.(line.time)}
-              layout
-              animate={{
-                scale: isActive ? 1.04 : 1,
-              }}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 30,
-              }}
+              onClick={() => handleLineSeek(line.time)}
+              animate={{ scale: isActive ? 1.04 : 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  onSeek?.(line.time);
+                  handleLineSeek(line.time);
                 }
               }}
               className={cn(
                 "group relative cursor-pointer py-2 transition-opacity duration-300 origin-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded-lg",
-                isActive
-                  ? "opacity-100"
-                  : isPast
-                  ? "opacity-30 hover:opacity-75"
-                  : "opacity-35 hover:opacity-80"
+                isActive ? "opacity-100" : isPast ? "opacity-30 hover:opacity-75" : "opacity-35 hover:opacity-80"
               )}
             >
               {showTimestamps && (
@@ -212,7 +277,6 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
                   {formatLyricTime(line.time)}
                 </span>
               )}
-
               <span
                 className={cn(
                   "font-sans text-2xl font-bold tracking-tight md:text-3xl transition-all duration-300 leading-relaxed block",
@@ -226,13 +290,7 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
             </motion.div>
           );
         })}
-
-        {/* Footer attribution */}
-        <div className="pt-12 pb-8 flex justify-center">
-          <Badge variant="glass" size="xs">
-            Lyrics provided by {source || "LRCLIB"}
-          </Badge>
-        </div>
+        {attributionFooter}
       </div>
     </div>
   );
