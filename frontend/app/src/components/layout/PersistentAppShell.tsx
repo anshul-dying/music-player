@@ -67,7 +67,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
     lyrics, isLyricsLoading, related, relatedForVideoId,
     togglePlay, seek, setVolume, toggleMute, next, previous,
     toggleShuffle, toggleRepeat, toggleInfiniteRadio, initialize, removeFromQueue, play,
-    playTrack, fetchRelated,
+    playTrack, fetchRelated, queueFilter, setQueueFilter,
   } = usePlayerStore();
   const { playlists, fetchLibrary, toggleLike, isLiked, createPlaylist, addTracksToPlaylist } = useLibraryStore();
 
@@ -246,6 +246,8 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
             isShuffle={isShuffle}
             infiniteRadio={infiniteRadio}
             onToggleInfiniteRadio={toggleInfiniteRadio}
+            activeQueueFilter={queueFilter}
+            onQueueFilterChange={setQueueFilter}
             onSaveQueue={handleSaveQueue}
             lyrics={lyrics || undefined}
             isLyricsLoading={isLyricsLoading}

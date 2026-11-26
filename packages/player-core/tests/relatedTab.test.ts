@@ -91,4 +91,64 @@ describe('Issue #25 related tab parsers', () => {
     assert.equal(items[0].title, 'Related Album');
     assert.equal(items[0].browseId, 'MPREb_abc123');
   });
+
+  it('parseNextRadio extracts Up Next automix filter chips (#69)', () => {
+    const mockNext = {
+      contents: {
+        singleColumnMusicWatchNextResultsRenderer: {
+          tabbedRenderer: {
+            watchNextTabbedResultsRenderer: {
+              tabs: [
+                {
+                  tabRenderer: {
+                    content: {
+                      musicQueueRenderer: {
+                        subHeaderChipCloud: {
+                          chipCloudRenderer: {
+                            chips: [
+                              {
+                                chipCloudChipRenderer: {
+                                  text: { runs: [{ text: 'All' }] },
+                                  navigationEndpoint: {
+                                    queueUpdateCommand: {
+                                      fetchContentsCommand: {
+                                        watchEndpoint: { videoId: 'vid1', playlistId: 'RDAMVMvid1' },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                              {
+                                chipCloudChipRenderer: {
+                                  text: { runs: [{ text: 'Familiar' }] },
+                                  navigationEndpoint: {
+                                    queueUpdateCommand: {
+                                      fetchContentsCommand: {
+                                        watchEndpoint: { videoId: 'vid1', playlistId: 'RDAMVMvid1', params: 'wAEB8gECKAE%3D' },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            ],
+                          },
+                        },
+                        content: { playlistPanelRenderer: { contents: [] } },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+
+    const res = parseNextRadio(mockNext);
+    assert.equal(res.chips?.length, 2);
+    assert.equal(res.chips?.[1].label, 'Familiar');
+    assert.equal(res.chips?.[1].params, 'wAEB8gECKAE%3D');
+    assert.equal(res.chips?.[1].playlistId, 'RDAMVMvid1');
+  });
 });

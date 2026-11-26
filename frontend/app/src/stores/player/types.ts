@@ -13,6 +13,7 @@ import {
   SyntheticShelfOptions,
   ShelfItemData,
   CategorizedSearchResults,
+  QueueFilterChip,
 } from '@mp/player-core';
 import { type TrackData } from '@mp/dying';
 import { type LyricsResponse } from '@mp/api-contract';
@@ -83,6 +84,8 @@ export interface PlayerStoreState {
   related: ShelfItemData[];
   relatedForVideoId: string | null;
   isRelatedLoading: boolean;
+  queueFilter: string;
+  queueFilterChips: QueueFilterChip[];
 
   // Actions
   initialize: (mediaElement?: HTMLMediaElement) => void;
@@ -119,6 +122,7 @@ export interface PlayerStoreState {
   getPlaylist: (playlistId: string) => Promise<RemotePlaylistDetails>;
   fetchLyrics: (track: Track) => Promise<LyricsResponse | null>;
   fetchRelated: (videoId: string) => Promise<ShelfItemData[]>;
+  setQueueFilter: (filter: string) => Promise<void>;
 }
 
 export type StoreSet = (

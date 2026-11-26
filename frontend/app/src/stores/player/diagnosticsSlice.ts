@@ -11,7 +11,9 @@ import {
   SyntheticShelfOptions,
   ShelfItemData,
   CategorizedSearchResults,
+  QueueFilterChip,
 } from '@mp/player-core';
+import { applyQueueFilterService } from './playbackServices';
 import {
   type StoreSet,
   type StoreGet,
@@ -41,6 +43,8 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
   related: [] as ShelfItemData[],
   relatedForVideoId: null as string | null,
   isRelatedLoading: false,
+  queueFilter: 'All',
+  queueFilterChips: [] as QueueFilterChip[],
 
   setNetworkAdapterType: (type: NetworkAdapterType) => {
     const engine = get().engine;
@@ -121,12 +125,8 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
 
   getExploreFeed: async (): Promise<HomeFeedData> => {
     let engine = get().engine;
-    if (!engine) {
-      get().initialize();
-      engine = getSharedEngine();
-    }
-    if (!engine) return { chips: [], quickPicks: [], shelves: [] };
-    return engine.getExploreFeed();
+    if (!engine) { get().initialize(); engine = getSharedEngine(); }
+    return engine ? engine.getExploreFeed() : { chips: [], quickPicks: [], shelves: [] };
   },
 
   getNextRadio: async (videoId: string, playlistId?: string): Promise<NextRadioData> => {
@@ -149,6 +149,9 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
           duration: 0,
           thumbnail: item.thumbnail || '',
         }));
+    }
+    if (radioData.chips?.length) {
+      set({ queueFilterChips: radioData.chips });
     }
     if (radioData.related.length > 0) {
       relatedCache.set(videoId, radioData.related);
@@ -282,11 +285,13 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
 
   searchCategorized: async (query: string): Promise<CategorizedSearchResults> => {
     let engine = get().engine;
-    if (!engine) {
-      get().initialize();
-      engine = getSharedEngine();
-    }
-    if (!engine) return { songs: [], artists: [], albums: [], playlists: [] };
-    return engine.searchCategorized(query);
+    if (!engine) { get().initialize(); engine = getSharedEngine(); }
+    return engine ? engine.searchCategorized(query) : { songs: [], artists: [], albums: [], playlists: [] };
+  },
+
+  setQueueFilter: async (filter: string): Promise<void> => {
+    let engine = get().engine;
+    if (!engine) { get().initialize(); engine = getSharedEngine(); }
+    if (engine) await applyQueueFilterService(engine, filter, get().currentTrack, get().currentIndex, get().queueFilterChips, set);
   },
 });

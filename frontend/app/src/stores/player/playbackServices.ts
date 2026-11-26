@@ -1,4 +1,4 @@
-import { Track } from '@mp/player-core';
+import { type PlayerEngine, type QueueFilterChip, Track } from '@mp/player-core';
 import { type LyricsResponse } from '@mp/api-contract';
 import {
   type StoreSet,
@@ -6,6 +6,41 @@ import {
   type SleepTimerMode,
 } from './types';
 import { lyricsCache } from './engineContext';
+
+const FALLBACK_QUEUE_CHIP_PARAMS: Record<string, string | undefined> = {
+  All: undefined,
+  Familiar: 'wAEB8gECKAE%3D',
+  Discover: 'wAEB8gECKAI%3D',
+  Popular: 'wAEB8gECKAU%3D',
+  'Deep cuts': 'wAEB8gECKAM%3D',
+};
+
+export async function applyQueueFilterService(
+  engine: PlayerEngine,
+  filter: string,
+  currentTrack: Track | null,
+  currentIndex: number,
+  queueFilterChips: QueueFilterChip[],
+  set: StoreSet
+): Promise<void> {
+  set({ queueFilter: filter });
+  if (!currentTrack?.videoId) return;
+
+  const matched = queueFilterChips.find((c) => c.label.toLowerCase() === filter.toLowerCase());
+  const params = matched?.params ?? FALLBACK_QUEUE_CHIP_PARAMS[filter];
+  const radioData = await engine.getNextRadio(currentTrack.videoId, matched?.playlistId, params);
+  if (radioData.chips?.length) {
+    set({ queueFilterChips: radioData.chips });
+  }
+  const existingQueue = engine.getQueue();
+  const idx = currentIndex >= 0 && currentIndex < existingQueue.length ? currentIndex : 0;
+  const keptPrefix = existingQueue.slice(0, idx + 1);
+  const keptIds = new Set(keptPrefix.map((t) => t.videoId || t.id));
+  const nextTracks = radioData.queue.filter((t) => !keptIds.has(t.videoId || t.id));
+  if (nextTracks.length > 0 || filter === 'All') {
+    engine.setQueue([...keptPrefix, ...nextTracks], idx, false);
+  }
+}
 
 let sleepTimerInterval: ReturnType<typeof setInterval> | null = null;
 

@@ -282,12 +282,10 @@ export class PlayerEngine extends TypedEventEmitter<PlayerEngineEvents> {
   setShuffle(shuffle: boolean): void { this.queueManager.setShuffle(shuffle); }
   getShuffle(): boolean { return this.queueManager.getShuffle(); }
   search(query: string, clientName?: InnerTubeClientName): Promise<Track[]> { return this.innerTube.search(query, clientName); }
-  searchCategorized(query: string, clientName?: InnerTubeClientName): Promise<CategorizedSearchResults> {
-    return this.innerTube.searchCategorized(query, clientName);
-  }
+  searchCategorized(query: string, clientName?: InnerTubeClientName): Promise<CategorizedSearchResults> { return this.innerTube.searchCategorized(query, clientName); }
   getHomeFeed(moodParam?: string, options?: SyntheticShelfOptions): Promise<HomeFeedData> { return this.innerTube.getHomeFeed(moodParam, options); }
   getExploreFeed(): Promise<HomeFeedData> { return this.innerTube.getExploreFeed(); }
-  getNextRadio(videoId: string, playlistId?: string): Promise<NextRadioData> { return this.innerTube.getNextRadio(videoId, playlistId); }
+  getNextRadio(videoId: string, playlistId?: string, params?: string): Promise<NextRadioData> { return this.innerTube.getNextRadio(videoId, playlistId, 'WEB_REMIX', params); }
   getArtist(browseId: string): Promise<ArtistDetails> { return this.innerTube.getArtist(browseId); }
   getAlbum(browseId: string): Promise<AlbumDetails> { return this.innerTube.getAlbum(browseId); }
   getPlaylist(playlistId: string): Promise<RemotePlaylistDetails> { return this.innerTube.getPlaylist(playlistId); }
