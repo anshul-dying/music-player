@@ -17,12 +17,20 @@ export interface UseSearchNavigationReturn {
 /**
  * Builds the target search URL while preserving query whitespace and any active track parameter.
  */
-export function buildSearchUrl(pathname: string, query: string, currentV: string | null): string | null {
+export function buildSearchUrl(
+  pathname: string,
+  query: string,
+  currentV: string | null,
+  full = false
+): string | null {
   if (!query.trim()) {
     return pathname === '/search' ? '/' : null;
   }
   const params = new URLSearchParams();
   params.set('q', query);
+  if (full) {
+    params.set('mode', 'full');
+  }
   if (currentV) {
     params.set('v', currentV);
   }
@@ -75,8 +83,8 @@ export function useSearchNavigation(options: UseSearchNavigationOptions = {}): U
   }, []);
 
   const performNavigation = useCallback(
-    (query: string) => {
-      const targetUrl = buildSearchUrl(pathname, query, searchParams.get('v'));
+    (query: string, full = false) => {
+      const targetUrl = buildSearchUrl(pathname, query, searchParams.get('v'), full);
       if (targetUrl === null) return;
 
       if (!query.trim()) {
@@ -87,7 +95,8 @@ export function useSearchNavigation(options: UseSearchNavigationOptions = {}): U
         return;
       }
 
-      if (lastPushedQueryRef.current === query && searchParams.get('q') === query) {
+      const alreadyFull = !full || searchParams.get('mode') === 'full';
+      if (lastPushedQueryRef.current === query && searchParams.get('q') === query && alreadyFull) {
         return;
       }
 
@@ -148,7 +157,7 @@ export function useSearchNavigation(options: UseSearchNavigationOptions = {}): U
       clearTimeout(debounceTimerRef.current);
     }
     isTypingRef.current = false;
-    performNavigation(searchQueryRef.current);
+    performNavigation(searchQueryRef.current, true);
   }, [performNavigation]);
 
   useEffect(() => {

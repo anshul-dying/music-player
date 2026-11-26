@@ -59,14 +59,26 @@ export function ShellHeader({
           leftIcon={<Search className="h-4 w-4 text-text-tertiary" />}
           rightIcon={
             searchQuery ? (
-              <IconButton
-                aria-label="Clear search"
-                variant="ghost"
-                size="xs"
-                shape="circle"
-                icon={<X size={14} />}
-                onClick={onClearSearch}
-              />
+              <Flex gap="1" align="center">
+                {onSubmitSearch && (
+                  <IconButton
+                    aria-label="Submit search"
+                    variant="ghost"
+                    size="xs"
+                    shape="circle"
+                    icon={<Search size={14} />}
+                    onClick={onSubmitSearch}
+                  />
+                )}
+                <IconButton
+                  aria-label="Clear search"
+                  variant="ghost"
+                  size="xs"
+                  shape="circle"
+                  icon={<X size={14} />}
+                  onClick={onClearSearch}
+                />
+              </Flex>
             ) : (
               <Badge variant="glass" size="sm" className="pointer-coarse:hidden">
                 ⌘K

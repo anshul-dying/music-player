@@ -169,6 +169,13 @@ export interface NextRadioData {
   relatedBrowseId?: string;
 }
 
+export interface CategorizedSearchResults {
+  songs: Track[];
+  artists: ShelfItemData[];
+  albums: ShelfItemData[];
+  playlists: ShelfItemData[];
+}
+
 export interface ArtistDetails {
   id: string;
   name: string;
