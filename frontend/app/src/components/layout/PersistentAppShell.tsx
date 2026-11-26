@@ -71,6 +71,11 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   } = usePlayerStore();
   const { playlists, fetchLibrary, toggleLike, isLiked, createPlaylist, addTracksToPlaylist } = useLibraryStore();
 
+  useEffect(() => {
+    setHasMounted(true);
+    initialize(audioRef.current || undefined);
+  }, [initialize]);
+
   useUrlSync({
     isFullPlayerOpen,
     setIsFullPlayerOpen,
@@ -106,11 +111,6 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
     toggleFullPlayer: () => setIsFullPlayerOpen((prev) => !prev),
     closeModals: handleCloseModals,
   });
-
-  useEffect(() => {
-    setHasMounted(true);
-    initialize(audioRef.current || undefined);
-  }, [initialize]);
 
   useEffect(() => {
     fetchLibrary();

@@ -10,6 +10,7 @@ import { buildSabrFormat, getShaka, ShakaPlayerAdapter } from './sabrUtils';
 import {
   attachShakaEventListeners,
   detachShakaEventListeners,
+  snapToBufferedStart,
   BoundListener,
 } from './shakaEvents';
 
@@ -28,8 +29,21 @@ export class ShakaMseAudioDriver implements AudioDriver {
 
   private sabrAdapter: SabrStreamingAdapter | null = null;
   private sabrPlayerAdapter: ShakaPlayerAdapter | null = null;
+  private initPromise: Promise<void> | null = null;
 
+  /** Initializes Shaka Player and SABR adapter once, coalescing concurrent callers. */
   async initialize(mediaElement?: HTMLMediaElement): Promise<void> {
+    if (this.player) return;
+    if (this.initPromise) return this.initPromise;
+
+    this.initPromise = this.performInitialize(mediaElement).catch((err) => {
+      this.initPromise = null;
+      throw err;
+    });
+    return this.initPromise;
+  }
+
+  private async performInitialize(mediaElement?: HTMLMediaElement): Promise<void> {
     if (this.player) return;
 
     if (mediaElement) {
@@ -99,7 +113,7 @@ export class ShakaMseAudioDriver implements AudioDriver {
       emit: (evt, ...args) => this.emit(evt, ...args),
       setState: (s) => this.setState(s),
       getState: () => this.state,
-      onRateChange: (r) => { this.playbackRate = r; },
+      onRateChange: (r) => { if (r > 0) this.playbackRate = r; },
     });
     this.setState('idle');
   }
@@ -145,16 +159,13 @@ export class ShakaMseAudioDriver implements AudioDriver {
     }
 
     if (src.startsWith('blob:')) this.activeBlobUrl = src;
-    if (this.mediaElement) {
-      try { this.mediaElement.currentTime = startTime; } catch {}
-    }
     this.setState('loading');
 
     try {
       await (this.player as any).load(src, startTime);
       if (this.mediaElement) {
-        try { this.mediaElement.currentTime = startTime; } catch {}
-        this.mediaElement.playbackRate = this.playbackRate;
+        if (startTime === 0) snapToBufferedStart(this.mediaElement);
+        this.mediaElement.playbackRate = this.playbackRate > 0 ? this.playbackRate : 1;
       }
       this.setState('paused');
     } catch (err: any) {
@@ -167,14 +178,15 @@ export class ShakaMseAudioDriver implements AudioDriver {
 
   async play(): Promise<void> {
     if (!this.mediaElement) return;
+    snapToBufferedStart(this.mediaElement);
     try {
       await this.mediaElement.play();
     } catch (err: any) {
-      if (err?.name !== 'AbortError') {
-        this.setState('error');
-        this.emit('error', err);
-        throw err;
-      }
+      if (err?.name === 'AbortError') { if (this.mediaElement.paused) this.setState('paused'); return; }
+      if (err?.name === 'NotAllowedError') { this.setState('paused'); throw err; }
+      this.setState('error');
+      this.emit('error', err);
+      throw err;
     }
   }
 
@@ -199,8 +211,9 @@ export class ShakaMseAudioDriver implements AudioDriver {
   getVolume(): number { return this.volume; }
 
   setPlaybackRate(rate: number): void {
-    this.playbackRate = rate;
-    if (this.mediaElement) this.mediaElement.playbackRate = rate;
+    const safeRate = rate > 0 ? rate : 1;
+    this.playbackRate = safeRate;
+    if (this.mediaElement) this.mediaElement.playbackRate = safeRate;
   }
 
   getPlaybackRate(): number {
@@ -249,24 +262,17 @@ export class ShakaMseAudioDriver implements AudioDriver {
   }
 
   async destroy(): Promise<void> {
+    this.initPromise = null;
     detachShakaEventListeners(this.mediaElement, this.boundElementListeners);
     this.boundElementListeners = [];
 
-    if (this.activeBlobUrl && this.activeBlobUrl.startsWith('blob:') && typeof URL !== 'undefined') {
-      try {
-        URL.revokeObjectURL(this.activeBlobUrl);
-      } catch {
-        // Ignore
-      }
+    if (this.activeBlobUrl?.startsWith('blob:') && typeof URL !== 'undefined') {
+      try { URL.revokeObjectURL(this.activeBlobUrl); } catch {}
       this.activeBlobUrl = null;
     }
 
     if (this.sabrAdapter) {
-      try {
-        this.sabrAdapter.dispose();
-      } catch {
-        // Ignore
-      }
+      try { this.sabrAdapter.dispose(); } catch {}
       this.sabrAdapter = null;
     }
 
@@ -276,11 +282,7 @@ export class ShakaMseAudioDriver implements AudioDriver {
     }
 
     if (this.player) {
-      try {
-        await (this.player as any).destroy();
-      } catch {
-        // Ignore
-      }
+      try { await (this.player as any).destroy(); } catch {}
       this.player = null;
     }
 

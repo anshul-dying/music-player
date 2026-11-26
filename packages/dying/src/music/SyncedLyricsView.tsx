@@ -33,11 +33,8 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
   ...props
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const activeLineRef = useRef<HTMLDivElement>(null);
   const [userIsScrolling, setUserIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const programmaticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isProgrammaticScrollRef = useRef(false);
   const hasInitialScrolledRef = useRef(false);
   const wasHiddenRef = useRef(false);
   const lastLyricsRef = useRef(lyrics);
@@ -59,14 +56,6 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
       }, -1)
     : -1;
 
-  const clearProgrammaticFlag = useCallback(() => {
-    isProgrammaticScrollRef.current = false;
-    if (programmaticTimerRef.current) {
-      clearTimeout(programmaticTimerRef.current);
-      programmaticTimerRef.current = null;
-    }
-  }, []);
-
   const clearUserScrollLock = useCallback(() => {
     setUserIsScrolling(false);
     if (scrollTimeoutRef.current) {
@@ -76,21 +65,15 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
   }, []);
 
   const pauseAutoScrollForUser = useCallback(() => {
-    clearProgrammaticFlag();
     setUserIsScrolling(true);
     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     scrollTimeoutRef.current = setTimeout(clearUserScrollLock, 2800);
-  }, [clearProgrammaticFlag, clearUserScrollLock]);
-
-  const handleScroll = useCallback(() => {
-    if (!isSynced || isProgrammaticScrollRef.current) return;
-    pauseAutoScrollForUser();
-  }, [isSynced, pauseAutoScrollForUser]);
+  }, [clearUserScrollLock]);
 
   const scrollToActiveLine = useCallback(
     (behavior: ScrollBehavior) => {
       const container = containerRef.current;
-      const activeEl = activeLineRef.current;
+      const activeEl = container?.querySelector<HTMLElement>('[data-lyric-active="true"]');
       if (!container || !activeEl || container.clientHeight === 0) return false;
 
       const containerRect = container.getBoundingClientRect();
@@ -103,15 +86,10 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
       );
 
       if (Math.abs(container.scrollTop - targetTop) < 1) return true;
-
-      clearProgrammaticFlag();
-      isProgrammaticScrollRef.current = true;
-      container.scrollTo({ top: targetTop, behavior });
-      // Fallback clear in case scrollend does not fire (e.g. instant scroll or older browser)
-      programmaticTimerRef.current = setTimeout(clearProgrammaticFlag, behavior === "smooth" ? 900 : 80);
+      container.scrollTo({top: targetTop, behavior })
       return true;
     },
-    [clearProgrammaticFlag]
+    []
   );
 
   // Keep latest scroll state in a ref so ResizeObserver doesn't re-subscribe on every line
@@ -134,39 +112,34 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
   // Listen for scrollend and container visibility transitions (e.g. switching to Lyrics tab)
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if(!container) return;
 
-    container.addEventListener("scrollend", clearProgrammaticFlag);
     wasHiddenRef.current = container.clientHeight === 0;
 
     let observer: ResizeObserver | undefined;
-    if (typeof ResizeObserver !== "undefined") {
+    if(typeof ResizeObserver !== "undefined") {
       observer = new ResizeObserver(() => {
-        if (container.clientHeight === 0) {
+        if(container.clientHeight === 0) {
           wasHiddenRef.current = true;
           return;
         }
-        if (wasHiddenRef.current) {
+        if(wasHiddenRef.current) {
           wasHiddenRef.current = false;
           const s = scrollStateRef.current;
-          if (s.isSynced && s.autoScroll && !s.userIsScrolling && s.activeIndex !== -1) {
-            if (scrollToActiveLine("auto")) hasInitialScrolledRef.current = true;
+          if(s.isSynced && s.autoScroll && !s.userIsScrolling && s.activeIndex !== -1) {
+            if(scrollToActiveLine("auto")) hasInitialScrolledRef.current = true;
           }
         }
       });
       observer.observe(container);
     }
 
-    return () => {
-      container.removeEventListener("scrollend", clearProgrammaticFlag);
-      observer?.disconnect();
-    };
-  }, [isSynced, clearProgrammaticFlag, scrollToActiveLine]);
+    return () => observer?.disconnect();
+  }, [isSynced, hasLyrics, scrollToActiveLine]);
 
   useEffect(() => {
     return () => {
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
     };
   }, []);
 
@@ -237,17 +210,16 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
   return (
     <div
       ref={containerRef}
-      onScroll={handleScroll}
       onWheel={pauseAutoScrollForUser}
       onTouchMove={pauseAutoScrollForUser}
       className={cn(
-        "relative flex h-full w-full flex-col overflow-y-auto px-6 py-32 scrollbar-none select-none",
+        "relative flex h-full w-full flex-col overflow-y-auto px-6 scrollbar-none select-none",
         "mask-[linear-gradient(to_bottom,transparent_0%,black_15%,black_85%,transparent_100%)]",
         className
       )}
       {...props}
     >
-      <div className="flex flex-col gap-6 py-12 max-w-2xl mx-auto w-full">
+      <div className="flex flex-col gap-6 py-36 max-w-2xl mx-auto w-full">
         {lyrics.map((line, index) => {
           const isActive = index === activeIndex;
           const isPast = index < activeIndex;
@@ -255,7 +227,7 @@ export const SyncedLyricsView: React.FC<SyncedLyricsViewProps> = ({
           return (
             <motion.div
               key={line.id || `${line.time}-${index}`}
-              ref={isActive ? activeLineRef : null}
+              data-lyric-active={isActive ? "true" : undefined}
               onClick={() => handleLineSeek(line.time)}
               animate={{ scale: isActive ? 1.04 : 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}

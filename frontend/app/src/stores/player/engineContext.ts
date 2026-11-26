@@ -29,6 +29,15 @@ export function setSharedMediaElement(el: HTMLMediaElement | null) {
   sharedMediaElement = el;
 }
 
+export function resolveSharedMediaElement(mediaElement?: HTMLMediaElement): HTMLMediaElement | null {
+  const resolved =
+    mediaElement ||
+    sharedMediaElement ||
+    (typeof document !== 'undefined' ? (document.getElementById('mp-global-audio') as HTMLMediaElement | null) : null);
+  if (resolved) sharedMediaElement = resolved;
+  return resolved;
+}
+
 export function createNetworkAdapter(type: NetworkAdapterType): NetworkAdapter {
   switch (type) {
     case 'dev-proxy':

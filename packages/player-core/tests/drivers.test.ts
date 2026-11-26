@@ -91,4 +91,75 @@ describe('Drivers & Network Adapters', () => {
     mockMediaEl.playbackRate = 0.75;
     assert.equal(driver.getPlaybackRate(), 0.75);
   });
+
+  it('coalesces concurrent initialize() calls so load() does not clobber mediaElement', async () => {
+    const driver = new ShakaMseAudioDriver();
+    const sharedMediaEl = { volume: 1, playbackRate: 1 } as HTMLMediaElement;
+    let initCalls = 0;
+    let resolveInit!: () => void;
+
+    (driver as any).performInitialize = async (el?: HTMLMediaElement) => {
+      initCalls++;
+      (driver as any).mediaElement = el;
+      await new Promise<void>((resolve) => {
+        resolveInit = resolve;
+      });
+      (driver as any).player = { destroy: async () => {} };
+    };
+
+    const p1 = driver.initialize(sharedMediaEl);
+    const p2 = driver.initialize();
+    resolveInit();
+    await Promise.all([p1, p2]);
+
+    assert.equal(initCalls, 1);
+    assert.equal((driver as any).mediaElement, sharedMediaEl);
+    await driver.destroy();
+  });
+
+  it('sets paused without emitting stream error when play() rejects with NotAllowedError', async () => {
+    const driver = new ShakaMseAudioDriver();
+    let errorEmitted = false;
+    driver.on('error', () => { errorEmitted = true; });
+    (driver as any).mediaElement = {
+      buffered: { length: 0 },
+      play: async () => {
+        const err = new Error('play() failed because user did not interact');
+        err.name = 'NotAllowedError';
+        throw err;
+      },
+    };
+
+    await assert.rejects(() => driver.play(), { name: 'NotAllowedError' });
+    assert.equal(errorEmitted, false);
+    assert.equal(driver.getState(), 'paused');
+  });
+
+  it('ignores Shaka internal playbackRate=0 ratechange events so playback never stalls at 0x', async () => {
+    const { attachShakaEventListeners } = await import('../src/drivers/shakaEvents');
+    const listeners: Record<string, EventListener> = {};
+    const mockEl = {
+      playbackRate: 0,
+      addEventListener: (type: string, fn: EventListener) => { listeners[type] = fn; },
+      removeEventListener: () => {},
+    } as unknown as HTMLMediaElement;
+
+    let savedRate = 1;
+    let emittedRate: number | null = null;
+    attachShakaEventListeners(mockEl, null, {
+      emit: (_evt, val) => { emittedRate = val as number; },
+      setState: () => {},
+      getState: () => 'buffering',
+      onRateChange: (r) => { savedRate = r; },
+    });
+
+    listeners.ratechange?.(new Event('ratechange'));
+    assert.equal(savedRate, 1);
+    assert.equal(emittedRate, null);
+
+    (mockEl as any).playbackRate = 1.25;
+    listeners.ratechange?.(new Event('ratechange'));
+    assert.equal(savedRate, 1.25);
+    assert.equal(emittedRate, 1.25);
+  });
 });

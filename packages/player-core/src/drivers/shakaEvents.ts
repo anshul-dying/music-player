@@ -25,6 +25,7 @@ export function attachShakaEventListeners(
   addEl('timeupdate', () => callbacks.emit('timeUpdate', mediaElement.currentTime));
   addEl('durationchange', () => callbacks.emit('durationChange', mediaElement.duration || 0));
   addEl('ratechange', () => {
+    if (mediaElement.playbackRate <= 0) return;
     callbacks.onRateChange(mediaElement.playbackRate);
     callbacks.emit('rateChange', mediaElement.playbackRate);
   });
@@ -74,5 +75,14 @@ export function detachShakaEventListeners(
     for (const { type, listener } of boundListeners) {
       mediaElement.removeEventListener(type, listener);
     }
+  }
+}
+
+/** Snaps currentTime to buffered.start(0) when MSE starts slightly after 0. */
+export function snapToBufferedStart(mediaElement: HTMLMediaElement | null): void {
+  if (!mediaElement || !mediaElement.buffered?.length) return;
+  const firstStart = mediaElement.buffered.start(0);
+  if (mediaElement.currentTime < firstStart && firstStart - mediaElement.currentTime < 1) {
+    try { mediaElement.currentTime = firstStart; } catch {}
   }
 }

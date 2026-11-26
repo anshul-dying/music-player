@@ -14,7 +14,7 @@ import {
   getSharedEngine,
   setSharedEngine,
   getSharedMediaElement,
-  setSharedMediaElement,
+  resolveSharedMediaElement,
   createNetworkAdapter,
   lyricsCache,
   debouncedFetchLyrics,
@@ -50,7 +50,7 @@ export const createPlaybackSlice = (set: StoreSet, get: StoreGet) => ({
       return;
     }
 
-    if (mediaElement) setSharedMediaElement(mediaElement);
+    resolveSharedMediaElement(mediaElement);
     const hasExtension = Boolean((window as any).__MP_EXTENSION_ACTIVE__);
     const adapterType: NetworkAdapterType =
       get().networkAdapterType || (hasExtension ? 'web-extension' : 'dev-proxy');

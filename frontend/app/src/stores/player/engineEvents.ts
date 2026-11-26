@@ -22,7 +22,9 @@ export function bindEngineEvents(engine: PlayerEngine, set: StoreSet, get: Store
   });
 
   if (typeof (engine as any).on === 'function') {
-    (engine as any).on('playbackRateChange', (rate: number) => set({ playbackRate: rate }));
+    (engine as any).on('playbackRateChange', (rate: number) => {
+      if (rate > 0) set({ playbackRate: rate });
+    });
   }
 
   let lastTrackVideoId: string | null = null;
@@ -62,7 +64,7 @@ export function bindEngineEvents(engine: PlayerEngine, set: StoreSet, get: Store
       ...(isSameVideo && !cachedRelated ? {} : { related: cachedRelated || [], relatedForVideoId: cachedRelated ? track?.videoId || null : null }),
     });
 
-    const curRate = get().playbackRate;
+    const curRate = get().playbackRate > 0 ? get().playbackRate : 1;
     if (typeof (engine as any).setPlaybackRate === 'function') {
       (engine as any).setPlaybackRate(curRate);
     }
