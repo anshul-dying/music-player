@@ -109,12 +109,10 @@ export const createPlaybackSlice = (set: StoreSet, get: StoreGet) => ({
     });
 
     debouncedFetchLyrics(track, get().fetchLyrics);
+    if (track.videoId && get().queue.length <= 1) get().getNextRadio(track.videoId).catch(() => {});
 
     try {
       await engine.playTrack(track);
-      if (track.videoId && get().queue.length <= 1) {
-        get().getNextRadio(track.videoId).catch(() => {});
-      }
     } catch (err: any) {
       set({ playbackState: 'idle', error: err?.message || 'Failed to play track' });
     }

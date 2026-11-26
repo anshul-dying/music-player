@@ -136,6 +136,19 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
     }
     if (!engine) return { queue: [], related: [] };
     const radioData = await engine.getNextRadio(videoId, playlistId);
+    if (radioData.queue.length === 0 && radioData.related.length > 0) {
+      radioData.queue = radioData.related
+        .filter((item) => item.videoId && item.videoId !== videoId)
+        .slice(0, 15)
+        .map((item) => ({
+          id: item.videoId!,
+          videoId: item.videoId!,
+          title: item.title,
+          artist: item.subtitle || 'YouTube Music',
+          duration: 0,
+          thumbnail: item.thumbnail || '',
+        }));
+    }
     if (radioData.related.length > 0) {
       relatedCache.set(videoId, radioData.related);
     }

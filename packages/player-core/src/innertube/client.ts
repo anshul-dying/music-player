@@ -156,31 +156,36 @@ export class InnerTubeClient {
   ): Promise<NextRadioData> {
     const context = INNERTUBE_CONTEXTS[clientName];
     const endpoint = `${this.baseUrl}/youtubei/v1/next?key=${INNERTUBE_PUBLIC_KEY}&prettyPrint=false`;
-
-    const payload: Record<string, any> = {
-      context,
-      videoId,
-      enablePersistentPlaylistPanel: true,
-      isAudioOnly: true,
-    };
-    if (playlistId) {
-      payload.playlistId = playlistId;
-    }
-
-    const data = await this.network.postJson<any>(endpoint, payload, {
+    const headers = {
       'Content-Type': 'text/plain',
       'X-YouTube-Client-Name': context.client.clientName,
       'X-YouTube-Client-Version': context.client.clientVersion,
-    });
+    };
+    const fetchNext = (plId?: string) =>
+      this.network.postJson<any>(
+        endpoint,
+        { context, videoId, enablePersistentPlaylistPanel: true, isAudioOnly: true, ...(plId ? { playlistId: plId } : {}) },
+        headers
+      );
 
-    const parsed = this.parseNextRadio(data);
+    const parsed = this.parseNextRadio(await fetchNext(playlistId || `RDAMVM${videoId}`));
+
+    if (parsed.queue.length === 0 && !playlistId) {
+      try {
+        const plain = this.parseNextRadio(await fetchNext(undefined));
+        if (plain.queue.length > 0) parsed.queue = plain.queue;
+        if (parsed.related.length === 0 && plain.related.length > 0) parsed.related = plain.related;
+        if (!parsed.relatedBrowseId && plain.relatedBrowseId) parsed.relatedBrowseId = plain.relatedBrowseId;
+      } catch {
+        // Non-fatal
+      }
+    }
 
     if (parsed.related.length === 0 && parsed.relatedBrowseId) {
       try {
-        const relatedData = await this.browse(parsed.relatedBrowseId, undefined, clientName);
-        parsed.related = parseRelatedBrowse(relatedData);
+        parsed.related = parseRelatedBrowse(await this.browse(parsed.relatedBrowseId, undefined, clientName));
       } catch {
-        // Non-fatal: related tab can remain empty if browse fails
+        // Non-fatal
       }
     }
 
