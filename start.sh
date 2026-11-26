@@ -52,12 +52,18 @@ echo "==> Starting API on http://localhost:4000 ..."
 pnpm dev:api &
 API_PID=$!
 
-# 7. Start Next.js Web
+# 7. Start Worker in background
+echo "==> Starting Worker (spotify-import) ..."
+pnpm dev:worker &
+WORKER_PID=$!
+
+# 8. Start Next.js Web
 echo "==> Starting Web on http://localhost:3000 ..."
 echo ""
 echo "----------------------------------------------------"
-echo "  Web: http://localhost:3000"
-echo "  API: http://localhost:4000  (Health: /healthz)"
+echo "  Web:    http://localhost:3000"
+echo "  API:    http://localhost:4000  (Health: /healthz)"
+echo "  Worker: spotify-import (BullMQ)"
 echo "----------------------------------------------------"
 echo "Press Ctrl+C to stop all services."
 echo ""
@@ -65,5 +71,5 @@ echo ""
 pnpm dev:web &
 WEB_PID=$!
 
-# Wait for both processes
-wait $API_PID $WEB_PID
+# Wait for all processes
+wait $API_PID $WORKER_PID $WEB_PID
