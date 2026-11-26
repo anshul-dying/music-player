@@ -148,8 +148,7 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
 
   const isCurrentlyPlaying = playbackState === 'playing';
 
-  const isAuthRoute = pathname === '/login' || pathname === '/register';
-  if (isAuthRoute) {
+  if (pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password') {
     return <>{children}</>;
   }
 

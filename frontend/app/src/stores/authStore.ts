@@ -11,6 +11,7 @@ export interface UserProfile {
   name: string;
   email: string;
   image?: string | null;
+  emailVerified?: boolean;
   isGuest?: boolean;
 }
 
@@ -64,6 +65,7 @@ export const useAuthStore = create<AuthState>()(
                 name: u.name,
                 email: u.email,
                 image: u.image ?? null,
+                emailVerified: Boolean(u.emailVerified),
                 isGuest: false,
               },
               isAuthenticated: true,
@@ -104,6 +106,7 @@ export const useAuthStore = create<AuthState>()(
                 name: u.name,
                 email: u.email,
                 image: u.image ?? null,
+                emailVerified: Boolean(u.emailVerified),
                 isGuest: false,
               },
               isAuthenticated: true,
@@ -143,6 +146,7 @@ export const useAuthStore = create<AuthState>()(
                 name: u.name,
                 email: u.email,
                 image: u.image ?? null,
+                emailVerified: Boolean(u.emailVerified),
                 isGuest: false,
               },
               isAuthenticated: true,

@@ -3,6 +3,7 @@ import { bearer } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getDb } from "@mp/db";
 import { resolveAuthSecret } from "./authSecret.js";
+import { sendTransactionalEmail } from "./email.js";
 
 const defaultOrigins = ["http://localhost:3000", "http://localhost:4000"];
 const envOrigins = process.env.CORS_ORIGIN
@@ -32,6 +33,26 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+    async sendResetPassword({ user, url }) {
+      await sendTransactionalEmail({
+        to: user.email,
+        subject: "Reset your GaneGan password",
+        text: `Reset your GaneGan password by visiting: ${url}`,
+        html: `<p>Reset your GaneGan password by clicking <a href="${url}">this link</a>.</p>`,
+      });
+    },
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    async sendVerificationEmail({ user, url }) {
+      await sendTransactionalEmail({
+        to: user.email,
+        subject: "Verify your GaneGan email",
+        text: `Verify your GaneGan email address by visiting: ${url}`,
+        html: `<p>Verify your GaneGan email address by clicking <a href="${url}">this link</a>.</p>`,
+      });
+    },
   },
   socialProviders: {
     google: {

@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Stack, FormField, Input, Button } from '@mp/dying';
+import Link from 'next/link';
+import { Stack, FormField, Input, Button, Flex } from '@mp/dying';
 import { User, Mail, Lock } from 'lucide-react';
 
 export interface EmailCredentialsFormProps {
@@ -72,6 +73,17 @@ export function EmailCredentialsForm({
             required
           />
         </FormField>
+
+        {mode === 'login' && (
+          <Flex justify="end">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </Flex>
+        )}
 
         <Button
           type="submit"
