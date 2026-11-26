@@ -12,6 +12,7 @@ import {
   RemotePlaylistDetails,
   SyntheticShelfOptions,
   ShelfItemData,
+  CategorizedSearchResults,
 } from '@mp/player-core';
 import { type TrackData } from '@mp/dying';
 import { type LyricsResponse } from '@mp/api-contract';
@@ -107,6 +108,7 @@ export interface PlayerStoreState {
   removeFromQueue: (index: number) => void;
   clearQueue: () => void;
   search: (query: string) => Promise<Track[]>;
+  searchCategorized: (query: string) => Promise<CategorizedSearchResults>;
   setNetworkAdapterType: (type: NetworkAdapterType) => void;
   getDiagnosticInfo: () => DiagnosticInfo;
   getHomeFeed: (moodParam?: string, options?: SyntheticShelfOptions) => Promise<HomeFeedData>;

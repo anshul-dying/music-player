@@ -10,6 +10,7 @@ import {
   RemotePlaylistDetails,
   SyntheticShelfOptions,
   ShelfItemData,
+  CategorizedSearchResults,
 } from '@mp/player-core';
 import {
   type StoreSet,
@@ -277,5 +278,15 @@ export const createDiagnosticsSlice = (set: StoreSet, get: StoreGet) => ({
     }
     if (!engine) return [];
     return engine.search(query);
+  },
+
+  searchCategorized: async (query: string): Promise<CategorizedSearchResults> => {
+    let engine = get().engine;
+    if (!engine) {
+      get().initialize();
+      engine = getSharedEngine();
+    }
+    if (!engine) return { songs: [], artists: [], albums: [], playlists: [] };
+    return engine.searchCategorized(query);
   },
 });

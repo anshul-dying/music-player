@@ -1,5 +1,5 @@
 import {
-  AlbumDetails, ArtistDetails, HomeFeedData, InnerTubeClientName,
+  AlbumDetails, ArtistDetails, CategorizedSearchResults, HomeFeedData, InnerTubeClientName,
   NextRadioData, PlaybackState, RemotePlaylistDetails, RepeatMode, Track,
 } from '../types';
 import { NetworkAdapter, NativeHttpAdapter } from '../adapters/network';
@@ -282,6 +282,9 @@ export class PlayerEngine extends TypedEventEmitter<PlayerEngineEvents> {
   setShuffle(shuffle: boolean): void { this.queueManager.setShuffle(shuffle); }
   getShuffle(): boolean { return this.queueManager.getShuffle(); }
   search(query: string, clientName?: InnerTubeClientName): Promise<Track[]> { return this.innerTube.search(query, clientName); }
+  searchCategorized(query: string, clientName?: InnerTubeClientName): Promise<CategorizedSearchResults> {
+    return this.innerTube.searchCategorized(query, clientName);
+  }
   getHomeFeed(moodParam?: string, options?: SyntheticShelfOptions): Promise<HomeFeedData> { return this.innerTube.getHomeFeed(moodParam, options); }
   getExploreFeed(): Promise<HomeFeedData> { return this.innerTube.getExploreFeed(); }
   getNextRadio(videoId: string, playlistId?: string): Promise<NextRadioData> { return this.innerTube.getNextRadio(videoId, playlistId); }

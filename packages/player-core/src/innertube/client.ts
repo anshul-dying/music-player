@@ -1,6 +1,7 @@
 import {
   AlbumDetails,
   ArtistDetails,
+  CategorizedSearchResults,
   HomeFeedData,
   InnerTubeClientName,
   NextRadioData,
@@ -15,6 +16,7 @@ import {
   InnerTubeClientOptions,
 } from './contexts';
 import { parseSearchResults } from './searchParsers';
+import { parseCategorizedSearchResults } from './categorizedSearchParser';
 import { parseHomeFeed, parseNextRadio, type SyntheticShelfOptions } from './feedParsers';
 import { parseRelatedBrowse } from './nextRadioParsers';
 import {
@@ -103,29 +105,28 @@ export class InnerTubeClient {
   /**
    * Search InnerTube and parse matching tracks
    */
-  async search(
+  async search(query: string, clientName: InnerTubeClientName = 'WEB_REMIX', params?: string): Promise<Track[]> {
+    return this.parseSearchResults(await this.fetchSearchRaw(query, clientName, params));
+  }
+
+  /** Search InnerTube and parse categorized Songs, Artists, Albums, and Playlists. */
+  async searchCategorized(
     query: string,
     clientName: InnerTubeClientName = 'WEB_REMIX',
     params?: string
-  ): Promise<Track[]> {
+  ): Promise<CategorizedSearchResults> {
+    return parseCategorizedSearchResults(await this.fetchSearchRaw(query, clientName, params));
+  }
+
+  private async fetchSearchRaw(query: string, clientName: InnerTubeClientName, params?: string): Promise<any> {
     const context = INNERTUBE_CONTEXTS[clientName];
     const endpoint = `${this.baseUrl}/youtubei/v1/search?key=${INNERTUBE_PUBLIC_KEY}&prettyPrint=false`;
-
-    const payload: Record<string, any> = {
-      context,
-      query,
-    };
-    if (params) {
-      payload.params = params;
-    }
-
-    const data = await this.network.postJson<any>(endpoint, payload, {
+    const payload: Record<string, any> = params ? { context, query, params } : { context, query };
+    return this.network.postJson<any>(endpoint, payload, {
       'Content-Type': 'text/plain',
       'X-YouTube-Client-Name': context.client.clientName,
       'X-YouTube-Client-Version': context.client.clientVersion,
     });
-
-    return this.parseSearchResults(data);
   }
 
   /**
