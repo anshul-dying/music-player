@@ -74,7 +74,7 @@ export const FullPlayerQueueTab: React.FC<FullPlayerQueueTabProps> = ({
             onSelectTrack?.(queueTrack);
           }
         }}
-        className="group flex items-center justify-between px-3 py-2 rounded-xl hover:bg-surface-hover/80 transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+        className="group shrink-0 flex items-center justify-between px-3 py-2 rounded-xl hover:bg-surface-hover/80 transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
       >
         <div className="flex items-center min-w-0 flex-1 mr-3">
           <span className="font-mono text-xs text-text-tertiary w-6 shrink-0 group-hover:hidden">
@@ -190,10 +190,10 @@ export const FullPlayerQueueTab: React.FC<FullPlayerQueueTabProps> = ({
       </div>
 
       {/* Queue Scroll List */}
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-0.5 pr-1">
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col space-y-0.5 pr-1">
         {/* Current Active Track Row */}
         {track && (
-          <div className="group flex items-center justify-between px-3 py-2.5 rounded-xl bg-surface-active/90 border border-white/10 mb-2 shadow-sm">
+          <div className="group shrink-0 flex items-center justify-between px-3 py-2.5 rounded-xl bg-surface-active/90 border border-white/10 mb-2 shadow-sm">
             <div className="flex items-center min-w-0 flex-1 mr-3">
               <div className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-surface border border-border-subtle mr-3">
                 {thumbnail ? (
@@ -238,17 +238,18 @@ export const FullPlayerQueueTab: React.FC<FullPlayerQueueTabProps> = ({
             )}
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-40 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
             <EmptyState
               title="No upcoming tracks"
               description="Turn on Autoplay to keep the music playing with similar songs."
+              className="border-0 border-none bg-transparent rounded-none py-8 px-4"
             />
           </div>
         )}
 
         {/* Previously Played Tracks */}
         {previousTracks.length > 0 && (
-          <div className="pt-3 mt-3 border-t border-border-subtle/60 opacity-65">
+          <div className="shrink-0 pt-3 mt-3 border-t border-border-subtle/60 opacity-65">
             <div className="px-3 py-1">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
                 Previously Played ({previousTracks.length})
