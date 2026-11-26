@@ -79,10 +79,11 @@ export const FullPlayerRelatedTab: React.FC<FullPlayerRelatedTabProps> = ({
             );
           })
         ) : (
-          <div className="flex flex-col items-center justify-center h-48 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
             <EmptyState
               title="No related recommendations"
               description="Recommendations will appear as more tracks are explored."
+              className="border-0 border-none bg-transparent rounded-none py-8 px-4"
             />
           </div>
         )}
