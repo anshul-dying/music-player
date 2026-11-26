@@ -1,4 +1,5 @@
 import { YouTubeAuthStatus } from '../types';
+import { buildStreamProxyUrl } from './streamProxyUrl';
 
 /**
  * Pluggable Network Adapters for InnerTube and streaming transport
@@ -65,18 +66,7 @@ export class DevProxyAdapter implements NetworkAdapter {
   }
 
   resolveStreamUrl(url: string, videoId?: string): string {
-    if (url.includes('/stream?url=')) {
-      if (videoId && !url.includes('&v=')) {
-        return `${url}&v=${encodeURIComponent(videoId)}`;
-      }
-      return url;
-    }
-    const origin =
-      typeof window !== 'undefined' && window.location?.origin
-        ? window.location.origin
-        : 'http://localhost:3000';
-    const vParam = videoId ? `&v=${encodeURIComponent(videoId)}` : '';
-    return `${origin}${this.proxyBaseUrl}/stream?url=${encodeURIComponent(url)}${vParam}`;
+    return buildStreamProxyUrl(url, videoId, { proxyBaseUrl: this.proxyBaseUrl });
   }
 
   private resolveUrl(targetUrl: string): string {

@@ -1,4 +1,5 @@
 import { NetworkAdapter } from './network';
+import { buildStreamProxyUrl } from './streamProxyUrl';
 import { YouTubeAuthStatus } from '../types';
 import { ExtensionBridgeRequest, ExtensionBridgeResponse } from './extensionTypes';
 import {
@@ -29,18 +30,7 @@ export class WebExtensionAdapter implements NetworkAdapter {
   }
 
   resolveStreamUrl(url: string, videoId?: string): string {
-    if (url.includes('/stream?url=')) {
-      if (videoId && !url.includes('&v=')) {
-        return `${url}&v=${encodeURIComponent(videoId)}`;
-      }
-      return url;
-    }
-    const origin =
-      typeof window !== 'undefined' && window.location?.origin
-        ? window.location.origin
-        : 'http://localhost:3000';
-    const vParam = videoId ? `&v=${encodeURIComponent(videoId)}` : '';
-    return `${origin}/api/yt/stream?url=${encodeURIComponent(url)}${vParam}`;
+    return buildStreamProxyUrl(url, videoId);
   }
 
   private async fallbackProxyFetch(url: string, init?: RequestInit): Promise<Response> {

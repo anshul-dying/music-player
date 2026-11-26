@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFreshRollingUrl } from '@/lib/yt-proxy/rollingUrl';
 import { getBaseHeaders } from '@/lib/yt-proxy/streamHeaders';
 import { buildStreamResponse, STREAM_CORS_HEADERS } from '@/lib/yt-proxy/streamResponse';
+import { checkStreamAccess } from '@/lib/yt-proxy/streamGuard';
 import { isValidVideoId, parseStreamTarget } from '@/lib/yt-proxy/streamTarget';
 import {
   fetchFollowingRedirects,
@@ -33,6 +34,14 @@ async function probeWithRange(
 }
 
 async function handle(req: NextRequest, method: Method): Promise<NextResponse> {
+  const guard = checkStreamAccess(req);
+  if (!guard.ok) {
+    return new NextResponse(guard.message, {
+      status: guard.status,
+      headers: guard.headers,
+    });
+  }
+
   try {
     const target = parseStreamTarget(req.nextUrl.searchParams.get('url'));
     if (!target.ok) {
@@ -118,6 +127,8 @@ async function handle(req: NextRequest, method: Method): Promise<NextResponse> {
       return new NextResponse(error.message, { status: error.status });
     }
     return new NextResponse(`Streaming error: ${error?.message || error}`, { status: 500 });
+  } finally {
+    guard.release();
   }
 }
 
