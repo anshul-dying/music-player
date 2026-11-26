@@ -26,6 +26,7 @@ import { useYouTubeAuthStore } from '@/stores/youtubeAuthStore';
 
 export default function ExtensionPage() {
   const { isExtensionInstalled, isChecking, checkStatus } = useYouTubeAuthStore();
+  const chromeStoreUrl = process.env.NEXT_PUBLIC_CHROME_WEB_STORE_URL?.trim();
 
   return (
     <Container size="md" className="py-8">
@@ -86,13 +87,25 @@ export default function ExtensionPage() {
               >
                 Check Connection
               </Button>
+              {chromeStoreUrl && (
+                <a
+                  href={chromeStoreUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="no-underline"
+                >
+                  <Button variant="accent" size="sm" leftIcon={<Chrome size={14} />} rightIcon={<ExternalLink size={12} />}>
+                    Add to Chrome
+                  </Button>
+                </a>
+              )}
               <a
                 href="/downloads/ganegan-extension.zip"
                 download="ganegan-extension.zip"
                 className="no-underline"
               >
-                <Button variant="primary" size="sm" leftIcon={<Download size={14} />}>
-                  Download (.zip)
+                <Button variant={chromeStoreUrl ? 'secondary' : 'primary'} size="sm" leftIcon={<Download size={14} />}>
+                  {chromeStoreUrl ? 'Manual (.zip)' : 'Download (.zip)'}
                 </Button>
               </a>
             </Flex>
