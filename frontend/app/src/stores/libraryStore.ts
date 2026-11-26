@@ -48,6 +48,16 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     }
   },
 
+  resetLibrary: () => {
+    set({
+      likedVideoIds: new Set<string>(),
+      likedTracks: [],
+      playlists: [],
+      history: [],
+      isLoading: false,
+    });
+  },
+
   isLiked: (videoId: string): boolean => {
     if (!videoId) return false;
     return get().likedVideoIds.has(videoId);

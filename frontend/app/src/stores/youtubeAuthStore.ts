@@ -32,11 +32,17 @@ export interface YouTubeAuthState {
   checkStatus: () => Promise<void>;
   syncLibrary: () => Promise<void>;
   resetSync: () => void;
+  setUserScope: (userId: string | null) => void;
 }
 
-const YT_SYNC_CACHE_KEY = 'mp_yt_synced_library_v1';
+const YT_SYNC_CACHE_PREFIX = 'mp_yt_synced_library_v1:';
+let currentUserScope = 'guest';
 
-function loadCachedYouTubeSync(): {
+function getSyncCacheKey(scope = currentUserScope): string {
+  return `${YT_SYNC_CACHE_PREFIX}${scope}`;
+}
+
+function loadCachedYouTubeSync(scope = currentUserScope): {
   syncedLikedTracks: Track[];
   syncedPlaylists: (RemotePlaylistDetails | any)[];
 } {
@@ -44,7 +50,7 @@ function loadCachedYouTubeSync(): {
     return { syncedLikedTracks: [], syncedPlaylists: [] };
   }
   try {
-    const raw = localStorage.getItem(YT_SYNC_CACHE_KEY);
+    const raw = localStorage.getItem(getSyncCacheKey(scope));
     if (!raw) return { syncedLikedTracks: [], syncedPlaylists: [] };
     const parsed = JSON.parse(raw);
     return {
@@ -58,12 +64,13 @@ function loadCachedYouTubeSync(): {
 
 function saveCachedYouTubeSync(
   syncedLikedTracks: Track[],
-  syncedPlaylists: (RemotePlaylistDetails | any)[]
+  syncedPlaylists: (RemotePlaylistDetails | any)[],
+  scope = currentUserScope
 ) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(
-      YT_SYNC_CACHE_KEY,
+      getSyncCacheKey(scope),
       JSON.stringify({ syncedLikedTracks, syncedPlaylists })
     );
   } catch {
@@ -230,6 +237,17 @@ export const useYouTubeAuthStore = create<YouTubeAuthState>((set, get) => ({
     set({
       syncedLikedTracks: [],
       syncedPlaylists: [],
+    });
+  },
+
+  setUserScope: (userId: string | null) => {
+    const nextScope = userId || 'guest';
+    if (nextScope === currentUserScope) return;
+    currentUserScope = nextScope;
+    const cached = loadCachedYouTubeSync(nextScope);
+    set({
+      syncedLikedTracks: cached.syncedLikedTracks,
+      syncedPlaylists: cached.syncedPlaylists,
     });
   },
 }));
