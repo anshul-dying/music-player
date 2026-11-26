@@ -49,7 +49,8 @@ async function handle(req: NextRequest, method: Method): Promise<NextResponse> {
     const rangeHeader = req.headers.get('range');
     const headers = getBaseHeaders(clientParam, rangeHeader || undefined);
 
-    let upstreamRes: Response;
+    let upstreamRes: Response | null = null;
+    let upstreamFetchError: unknown = null;
     if (method === 'HEAD') {
       upstreamRes = await fetchFollowingRedirects(target.url.href, {
         method,
@@ -61,11 +62,21 @@ async function handle(req: NextRequest, method: Method): Promise<NextResponse> {
         upstreamRes = await probeWithRange(target.url.href, clientParam, req.signal);
       }
     } else {
-      upstreamRes = await fetchWithFallback(target.url.href, headers, req.signal);
+      try {
+        upstreamRes = await fetchWithFallback(target.url.href, headers, req.signal);
+      } catch (err) {
+        if (err instanceof UpstreamError) throw err;
+        upstreamFetchError = err;
+      }
     }
 
-    // 403 on stream request: mint a fresh URL (preferring a different client) and retry once
-    if (upstreamRes.status === 403 && videoId && method === 'GET') {
+    // 403 or upstream timeout/network failure on GET: mint a fresh URL and retry once
+    if (
+      method === 'GET' &&
+      videoId &&
+      !req.signal?.aborted &&
+      (!upstreamRes || upstreamRes.status === 403)
+    ) {
       const match = rangeHeader?.match(/bytes=(\d+)-/);
       const reqStart = match ? parseInt(match[1], 10) : 0;
       const freshUrl = await getFreshRollingUrl(videoId, itagParam, reqStart, undefined, clientParam);
@@ -78,12 +89,20 @@ async function handle(req: NextRequest, method: Method): Promise<NextResponse> {
           req.signal
         );
         if (retryRes.ok) {
-          await upstreamRes.body?.cancel();
+          await upstreamRes?.body?.cancel();
           upstreamRes = retryRes;
+          upstreamFetchError = null;
         } else {
           await retryRes.body?.cancel();
+          if (!upstreamRes) upstreamRes = retryRes;
         }
       }
+    }
+
+    if (!upstreamRes) {
+      throw upstreamFetchError instanceof Error
+        ? new UpstreamError(504, `Upstream stream timeout: ${upstreamFetchError.message}`)
+        : new UpstreamError(502, 'Upstream stream request failed');
     }
 
     if (!upstreamRes.ok) {

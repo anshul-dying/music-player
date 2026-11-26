@@ -38,6 +38,14 @@ export async function fetchFollowingRedirects(
   throw new UpstreamError(502, 'Too many redirects');
 }
 
+const UPSTREAM_TIMEOUT_MS = 8000;
+
+function withTimeoutSignal(signal: AbortSignal | undefined): AbortSignal {
+  const timeout = AbortSignal.timeout(UPSTREAM_TIMEOUT_MS);
+  if (!signal) return timeout;
+  return typeof AbortSignal.any === 'function' ? AbortSignal.any([signal, timeout]) : signal;
+}
+
 /**
  * Fetches the stream and, when the CDN answers 403, retries with browser-like
  * headers and then with minimal headers before giving up.
@@ -48,7 +56,11 @@ export async function fetchWithFallback(
   signal: AbortSignal | undefined
 ): Promise<Response> {
   const attempt = (attemptHeaders: Record<string, string>) =>
-    fetchFollowingRedirects(targetUrl, { method: 'GET', headers: attemptHeaders, signal });
+    fetchFollowingRedirects(targetUrl, {
+      method: 'GET',
+      headers: attemptHeaders,
+      signal: withTimeoutSignal(signal),
+    });
 
   const first = await attempt(headers);
   if (first.status !== 403) {
