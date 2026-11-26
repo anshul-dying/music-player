@@ -63,10 +63,10 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
   }, [setSpotifyToast, toast]);
   const {
     currentTrack, currentIndex, playbackState, currentTime, duration,
-    bufferedPercent, volume, isMuted, queue, isShuffle, repeatMode,
+    bufferedPercent, volume, isMuted, queue, isShuffle, repeatMode, infiniteRadio,
     lyrics, isLyricsLoading, related, relatedForVideoId,
     togglePlay, seek, setVolume, toggleMute, next, previous,
-    toggleShuffle, toggleRepeat, initialize, removeFromQueue, play,
+    toggleShuffle, toggleRepeat, toggleInfiniteRadio, initialize, removeFromQueue, play,
     playTrack, fetchRelated,
   } = usePlayerStore();
   const { playlists, fetchLibrary, toggleLike, isLiked, createPlaylist, addTracksToPlaylist } = useLibraryStore();
@@ -244,6 +244,8 @@ export function PersistentAppShell({ children }: PersistentAppShellProps) {
             queue={queue.map(getTrackDataWithLiked)}
             currentIndex={currentIndex}
             isShuffle={isShuffle}
+            infiniteRadio={infiniteRadio}
+            onToggleInfiniteRadio={toggleInfiniteRadio}
             onSaveQueue={handleSaveQueue}
             lyrics={lyrics || undefined}
             isLyricsLoading={isLyricsLoading}
