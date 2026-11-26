@@ -1,4 +1,4 @@
-import { NextRadioData, ShelfItemData, Track } from '../types';
+import { NextRadioData, QueueFilterChip, ShelfItemData, Track } from '../types';
 import { parseTrackFromRenderer } from './parsers';
 import { parseShelfItem } from './shelfParsers';
 import { parseSearchResults } from './searchParsers';
@@ -119,7 +119,47 @@ export function parseNextRadio(data: any): NextRadioData {
     }
   }
 
-  return { queue, related, ...(relatedBrowseId ? { relatedBrowseId } : {}) };
+  // 3. Extract Up Next automix filter chips from subHeaderChipCloud
+  const chips: QueueFilterChip[] = [];
+  const findChips = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+    if (node.chipCloudRenderer?.chips && Array.isArray(node.chipCloudRenderer.chips)) {
+      for (const entry of node.chipCloudRenderer.chips) {
+        const chip = entry?.chipCloudChipRenderer;
+        if (!chip) continue;
+        const label =
+          chip.text?.runs?.map((r: any) => r?.text || '').join('').trim() ||
+          chip.text?.simpleText ||
+          '';
+        const watchEp =
+          chip.navigationEndpoint?.queueUpdateCommand?.fetchContentsCommand?.watchEndpoint ||
+          chip.navigationEndpoint?.watchEndpoint;
+        if (label) {
+          chips.push({
+            label,
+            ...(watchEp?.params ? { params: watchEp.params } : {}),
+            ...(watchEp?.playlistId ? { playlistId: watchEp.playlistId } : {}),
+          });
+        }
+      }
+      return;
+    }
+    if (Array.isArray(node)) {
+      for (const child of node) findChips(child);
+      return;
+    }
+    for (const key of Object.keys(node)) {
+      findChips(node[key]);
+    }
+  };
+  findChips(Array.isArray(tabs) && tabs.length > 0 ? tabs[0] : data);
+
+  return {
+    queue,
+    related,
+    ...(relatedBrowseId ? { relatedBrowseId } : {}),
+    ...(chips.length > 0 ? { chips } : {}),
+  };
 }
 
 /**

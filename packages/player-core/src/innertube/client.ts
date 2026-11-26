@@ -153,7 +153,8 @@ export class InnerTubeClient {
   async getNextRadio(
     videoId: string,
     playlistId?: string,
-    clientName: InnerTubeClientName = 'WEB_REMIX'
+    clientName: InnerTubeClientName = 'WEB_REMIX',
+    params?: string
   ): Promise<NextRadioData> {
     const context = INNERTUBE_CONTEXTS[clientName];
     const endpoint = `${this.baseUrl}/youtubei/v1/next?key=${INNERTUBE_PUBLIC_KEY}&prettyPrint=false`;
@@ -165,7 +166,7 @@ export class InnerTubeClient {
     const fetchNext = (plId?: string) =>
       this.network.postJson<any>(
         endpoint,
-        { context, videoId, enablePersistentPlaylistPanel: true, isAudioOnly: true, ...(plId ? { playlistId: plId } : {}) },
+        { context, videoId, enablePersistentPlaylistPanel: true, isAudioOnly: true, ...(plId ? { playlistId: plId } : {}), ...(params ? { params } : {}) },
         headers
       );
 

@@ -163,10 +163,17 @@ export interface HomeFeedData {
   shelves: MediaShelfData[];
 }
 
+export interface QueueFilterChip {
+  label: string;
+  params?: string;
+  playlistId?: string;
+}
+
 export interface NextRadioData {
   queue: Track[];
   related: ShelfItemData[];
   relatedBrowseId?: string;
+  chips?: QueueFilterChip[];
 }
 
 export interface CategorizedSearchResults {
