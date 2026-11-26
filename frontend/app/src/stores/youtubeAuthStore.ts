@@ -78,20 +78,27 @@ function saveCachedYouTubeSync(
   }
 }
 
-const initialSyncCache = loadCachedYouTubeSync();
-
 export const useYouTubeAuthStore = create<YouTubeAuthState>((set, get) => ({
   isExtensionInstalled: false,
   isYouTubeAuthenticated: false,
   youtubeAccount: null,
-  syncedLikedTracks: initialSyncCache.syncedLikedTracks,
-  syncedPlaylists: initialSyncCache.syncedPlaylists,
+  syncedLikedTracks: [],
+  syncedPlaylists: [],
   isChecking: false,
   isSyncing: false,
 
   checkStatus: async () => {
     if (typeof window === 'undefined') return;
     if (get().isChecking) return;
+    if (get().syncedLikedTracks.length === 0 && get().syncedPlaylists.length === 0) {
+      const cached = loadCachedYouTubeSync();
+      if (cached.syncedLikedTracks.length > 0 || cached.syncedPlaylists.length > 0) {
+        set({
+          syncedLikedTracks: cached.syncedLikedTracks,
+          syncedPlaylists: cached.syncedPlaylists,
+        });
+      }
+    }
     set({ isChecking: true });
 
     try {
