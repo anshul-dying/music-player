@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import { authClient } from '../lib/auth-client';
 import { migrateGuestData } from './library/guestMigration';
 import { useLibraryStore } from './libraryStore';
+import { useYouTubeAuthStore } from './youtubeAuthStore';
+import { useSpotifyImportStore } from './spotifyImportStore';
 
 export interface UserProfile {
   id: string;
@@ -30,13 +32,15 @@ interface AuthState {
   loginAsGuest: (name?: string) => void;
 }
 
-/** Moves guest likes and playlists to the account and reloads the library if anything moved. */
-function syncGuestData(): void {
+/** Scopes user caches, migrates guest data, and reloads the user's library. */
+function syncUserSession(userId: string): void {
+  useYouTubeAuthStore.getState().setUserScope(userId);
   migrateGuestData()
-    .then(({ likes, playlists }) => {
-      if (likes > 0 || playlists > 0) return useLibraryStore.getState().fetchLibrary();
-    })
-    .catch((err) => console.warn('Failed to migrate guest data:', err));
+    .then(() => useLibraryStore.getState().fetchLibrary())
+    .catch((err) => {
+      console.warn('Failed to migrate guest data:', err);
+      useLibraryStore.getState().fetchLibrary().catch(() => {});
+    });
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -64,7 +68,7 @@ export const useAuthStore = create<AuthState>()(
               },
               isAuthenticated: true,
             });
-            syncGuestData();
+            syncUserSession(u.id);
           } else {
             const current = get().user;
             if (current && !current.isGuest) {
@@ -104,7 +108,7 @@ export const useAuthStore = create<AuthState>()(
               },
               isAuthenticated: true,
             });
-            syncGuestData();
+            syncUserSession(u.id);
           }
 
           return { success: true };
@@ -143,7 +147,7 @@ export const useAuthStore = create<AuthState>()(
               },
               isAuthenticated: true,
             });
-            syncGuestData();
+            syncUserSession(u.id);
           }
 
           return { success: true };
@@ -168,6 +172,10 @@ export const useAuthStore = create<AuthState>()(
         } catch (err) {
           console.warn('Sign out error:', err);
         }
+        useLibraryStore.getState().resetLibrary();
+        useYouTubeAuthStore.getState().setUserScope(null);
+        useYouTubeAuthStore.getState().resetSync();
+        useSpotifyImportStore.getState().reset();
         set({
           user: null,
           isAuthenticated: false,

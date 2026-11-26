@@ -34,6 +34,7 @@ interface SpotifyImportStoreState {
   connectSpotify: () => Promise<void>;
   disconnectSpotify: () => Promise<void>;
   startImport: (kind: 'liked_songs' | 'playlists', playlistUrl?: string) => Promise<void>;
+  reset: () => void;
 }
 
 let activeEventSource: EventSource | null = null;
@@ -104,6 +105,12 @@ export const useSpotifyImportStore = create<SpotifyImportStoreState>((set, get) 
       credentials: 'include',
     }).catch(() => {});
     set({ connected: false, job: null });
+  },
+
+  reset: () => {
+    activeEventSource?.close();
+    activeEventSource = null;
+    set({ connected: false, job: null, error: null, isModalOpen: false });
   },
 
   startImport: async (kind, playlistUrl) => {

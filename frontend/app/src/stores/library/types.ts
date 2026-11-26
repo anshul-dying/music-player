@@ -30,6 +30,7 @@ export interface LibraryState {
 
   // Actions
   fetchLibrary: () => Promise<void>;
+  resetLibrary: () => void;
   toggleLike: (track: Track) => Promise<void>;
   isLiked: (videoId: string) => boolean;
   createPlaylist: (name: string) => Promise<Playlist | null>;
