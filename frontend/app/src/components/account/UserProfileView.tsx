@@ -12,9 +12,10 @@ import {
   Separator,
   useToast,
 } from '@mp/dying';
-import { LogOut, Sparkles, MailCheck } from 'lucide-react';
+import { LogOut, Sparkles, MailCheck, Download, Trash2 } from 'lucide-react';
 import { type UserProfile } from '../../stores/authStore';
 import { authClient } from '../../lib/auth-client';
+import { DeleteAccountDialog } from './DeleteAccountDialog';
 
 export interface UserProfileViewProps {
   user: UserProfile | null;
@@ -25,6 +26,28 @@ export interface UserProfileViewProps {
 export function UserProfileView({ user, onLogout, onClose }: UserProfileViewProps) {
   const { toast } = useToast();
   const [sendingVerify, setSendingVerify] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch('/api/account/export', { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ganegan-export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: 'Data exported', description: 'Downloaded ganegan-export.json', variant: 'success' });
+    } catch (err: any) {
+      toast({ title: 'Export failed', description: err?.message, variant: 'error' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleResendVerification = async () => {
     if (!user?.email) return;
@@ -110,12 +133,35 @@ export function UserProfileView({ user, onLogout, onClose }: UserProfileViewProp
         </Stack>
       </Box>
 
-      <Separator className="my-1" />
+      <Box className="p-3 rounded-xl bg-surface border border-border-subtle">
+        <Flex gap="2" justify="between" align="center">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            isLoading={isExporting}
+            leftIcon={<Download size={14} />}
+            onClick={handleExportData}
+          >
+            Export Data (JSON)
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-status-error hover:text-status-error hover:bg-status-error/10"
+            leftIcon={<Trash2 size={14} />}
+            onClick={() => setDeleteOpen(true)}
+          >
+            Delete Account
+          </Button>
+        </Flex>
+      </Box>
 
-      <DialogFooter className="pt-2 flex items-center justify-between">
+      <DialogFooter className="pt-4 sm:justify-between items-center">
         <Button
           type="button"
-          variant="danger"
+          variant="secondary"
           size="sm"
           leftIcon={<LogOut size={14} />}
           onClick={onLogout}
@@ -132,6 +178,12 @@ export function UserProfileView({ user, onLogout, onClose }: UserProfileViewProp
           Done
         </Button>
       </DialogFooter>
+
+      <DeleteAccountDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onDeleted={onClose}
+      />
     </Stack>
   );
 }

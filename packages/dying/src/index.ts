@@ -200,6 +200,8 @@ export {
 
 // Effects
 export { AmbientAura, type AmbientAuraProps } from "./effects/AmbientAura";
+export { DustGrainBackdrop, type DustGrainBackdropProps } from "./effects/DustGrainBackdrop";
+export { Grainient, type GrainientProps } from "./effects/Grainient";
 export { SoundWave, type SoundWaveProps } from "./effects/SoundWave";
 export {
   ActivityHeatmap,

@@ -20,6 +20,7 @@ import {
   Sparkles,
   Youtube,
   Puzzle,
+  Settings,
 } from 'lucide-react';
 import { type Playlist } from '../../stores/libraryStore';
 import { useYouTubeAuthStore } from '../../stores/youtubeAuthStore';
@@ -127,7 +128,13 @@ export function ShellSidebar({
         </SidebarNav>
       </div>
 
-      <SidebarFooter>
+      <SidebarFooter className="pb-8 lg:pb-6">
+        <SidebarNavItem
+          icon={<Settings className="h-4 w-4" />}
+          label="Settings"
+          active={pathname === '/settings'}
+          onClick={() => onNavigate('/settings')}
+        />
         <SidebarNavItem
           icon={<Puzzle className="h-4 w-4 text-emerald-400" />}
           label="Extension"

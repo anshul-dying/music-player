@@ -40,6 +40,10 @@ const nextConfig: NextConfig = {
         source: "/api/import/:path*",
         destination: `${backendUrl}/api/import/:path*`,
       },
+      {
+        source: "/api/account/:path*",
+        destination: `${backendUrl}/api/account/:path*`,
+      },
     ];
   },
 };

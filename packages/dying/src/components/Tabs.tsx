@@ -29,17 +29,19 @@ export const TabsList = React.forwardRef<React.ElementRef<typeof RadixTabs.List>
     const variant = propVariant ?? contextVariant;
 
     return (
-      <RadixTabs.List
-        ref={ref}
-        className={cn(
-          "inline-flex items-center",
-          variant === "underline"
-            ? "gap-4 border-b border-border-subtle"
-            : "gap-1 rounded-xl bg-surface p-1 border border-border-subtle",
-          className
-        )}
-        {...props}
-      />
+      <TabsVariantContext.Provider value={variant}>
+        <RadixTabs.List
+          ref={ref}
+          className={cn(
+            "inline-flex items-center",
+            variant === "underline"
+              ? "gap-4 border-b border-border-subtle"
+              : "self-start gap-1 rounded-xl bg-surface p-1 border border-border-subtle",
+            className
+          )}
+          {...props}
+        />
+      </TabsVariantContext.Provider>
     );
   }
 );
@@ -100,6 +102,7 @@ export interface SegmentedControlProps<T extends string = string> {
   value: T;
   onValueChange: (value: T) => void;
   size?: "sm" | "md";
+  fullWidth?: boolean;
   className?: string;
   "aria-label"?: string;
 }
@@ -109,6 +112,7 @@ export function SegmentedControl<T extends string = string>({
   value,
   onValueChange,
   size = "md",
+  fullWidth = false,
   className,
   "aria-label": ariaLabel = "Segmented control",
 }: SegmentedControlProps<T>) {
@@ -116,11 +120,14 @@ export function SegmentedControl<T extends string = string>({
     <RadixTabs.Root
       value={value}
       onValueChange={(val) => onValueChange(val as T)}
-      className={cn("inline-flex", className)}
+      className={cn(fullWidth ? "flex w-full" : "inline-flex", className)}
     >
       <RadixTabs.List
         aria-label={ariaLabel}
-        className="inline-flex items-center gap-1 rounded-xl border border-border-subtle bg-surface p-1"
+        className={cn(
+          "items-center gap-1 rounded-xl border border-border-subtle bg-surface p-1",
+          fullWidth ? "flex w-full" : "inline-flex"
+        )}
       >
         {options.map((opt) => (
           <RadixTabs.Trigger
@@ -133,6 +140,7 @@ export function SegmentedControl<T extends string = string>({
               "data-[state=active]:bg-surface-active data-[state=active]:text-text-primary data-[state=active]:shadow-sm",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
               "disabled:pointer-events-none disabled:opacity-50",
+              fullWidth && "flex-1",
               size === "sm" ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm"
             )}
           >

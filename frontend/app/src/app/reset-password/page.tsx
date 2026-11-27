@@ -1,22 +1,11 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Lock } from 'lucide-react';
-import {
-  AmbientAura,
-  Card,
-  CardContent,
-  Button,
-  FormField,
-  Input,
-  Alert,
-  Stack,
-  Box,
-  Text,
-} from '@mp/dying';
+import { Lock } from 'lucide-react';
+import { CardContent, Button, FormField, Input, Alert, Stack, Text } from '@mp/dying';
 import { authClient } from '../../lib/auth-client';
+import { AuthPageShell } from '../../components/auth/AuthPageShell';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -66,11 +55,6 @@ function ResetPasswordForm() {
 
   return (
     <Stack gap="5">
-      <Link href="/login" className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors">
-        <ArrowLeft size={14} />
-        Back to Sign In
-      </Link>
-
       <Stack gap="1">
         <Text size="xl" weight="bold">Reset Password</Text>
         <Text size="xs" color="secondary">Choose a new password for your GaneGan account.</Text>
@@ -120,15 +104,12 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Box className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-canvas select-none">
-      <AmbientAura intensity={0.45} blur={120} />
-      <Card variant="glass" className="relative z-10 w-full max-w-md border-border-subtle">
-        <CardContent className="p-6 sm:p-8">
-          <Suspense fallback={null}>
-            <ResetPasswordForm />
-          </Suspense>
-        </CardContent>
-      </Card>
-    </Box>
+    <AuthPageShell backHref="/login" backLabel="Back to Sign In">
+      <CardContent className="p-0">
+        <Suspense fallback={null}>
+          <ResetPasswordForm />
+        </Suspense>
+      </CardContent>
+    </AuthPageShell>
   );
 }

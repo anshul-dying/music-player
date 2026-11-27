@@ -126,12 +126,13 @@ Textarea.displayName = "Textarea";
 export interface SelectProps
   extends React.SelectHTMLAttributes<HTMLSelectElement> {
   hasError?: boolean;
+  wrapperClassName?: string;
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, hasError = false, disabled, children, ...props }, ref) => {
+  ({ className, wrapperClassName, hasError = false, disabled, children, ...props }, ref) => {
     return (
-      <div className="relative w-full">
+      <div className={cn("relative w-full", wrapperClassName)}>
         <select
           ref={ref}
           disabled={disabled}
