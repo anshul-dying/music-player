@@ -2,18 +2,18 @@
 
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import {
-  AmbientAura,
-  Card,
   CardContent,
   CardFooter,
   Button,
+  SegmentedControl,
   Separator,
   Flex,
   Box,
   Text,
 } from '@mp/dying';
+import { AuthPageShell } from '../../components/auth/AuthPageShell';
 import { useAuthStore } from '../../stores/authStore';
 import { createDemoCredentials } from '../../stores/demoCredentials';
 import { OAuthButtons } from './components/OAuthButtons';
@@ -116,68 +116,24 @@ function LoginForm() {
   };
 
   return (
-    <Box className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-canvas select-none">
-      <AmbientAura
-        primaryColor="#064e3b"
-        secondaryColor="#18181b"
-        tertiaryColor="#09090b"
-        blur={140}
-        intensity={0.25}
-        className="fixed inset-0 pointer-events-none"
-      />
-
-      <Box className="absolute top-6 left-6 sm:top-8 sm:left-8 z-20">
-        <Button
-          variant="glass"
-          size="sm"
-          leftIcon={<ArrowLeft size={15} />}
-          onClick={() => router.push('/')}
-        >
-          Back to GaneGan
-        </Button>
-      </Box>
-
-      <Card
-        variant="glass"
-        className="relative z-10 w-full max-w-[420px] p-6 sm:p-7 backdrop-blur-3xl shadow-2xl rounded-2xl border-border-subtle bg-surface/90"
-      >
-        <AuthHeroFeatures mode={mode} />
+    <AuthPageShell>
+      <AuthHeroFeatures mode={mode} />
 
         <CardContent className="space-y-4">
-          <Box className="p-1 rounded-xl bg-surface-active/80 border border-border-subtle">
-            <Flex gap="1">
-              <Button
-                variant={mode === 'login' ? 'primary' : 'ghost'}
-                size="sm"
-                fullWidth
-                leftIcon={<LogIn size={14} />}
-                onClick={() => {
-                  setMode('login');
-                  setErrorMessage(null);
-                  setStatusMessage(null);
-                  setOauthWarning(null);
-                }}
-                className={mode === 'login' ? 'shadow-sm' : 'text-text-secondary hover:text-text-primary'}
-              >
-                Sign In
-              </Button>
-              <Button
-                variant={mode === 'register' ? 'primary' : 'ghost'}
-                size="sm"
-                fullWidth
-                leftIcon={<UserPlus size={14} />}
-                onClick={() => {
-                  setMode('register');
-                  setErrorMessage(null);
-                  setStatusMessage(null);
-                  setOauthWarning(null);
-                }}
-                className={mode === 'register' ? 'shadow-sm' : 'text-text-secondary hover:text-text-primary'}
-              >
-                Create Account
-              </Button>
-            </Flex>
-          </Box>
+          <SegmentedControl
+            fullWidth
+            value={mode}
+            onValueChange={(nextMode) => {
+              setMode(nextMode);
+              setErrorMessage(null);
+              setStatusMessage(null);
+              setOauthWarning(null);
+            }}
+            options={[
+              { value: 'login', label: 'Sign In', icon: <LogIn size={14} /> },
+              { value: 'register', label: 'Create Account', icon: <UserPlus size={14} /> },
+            ]}
+          />
 
           <AuthAlerts
             errorMessage={errorMessage}
@@ -235,8 +191,7 @@ function LoginForm() {
             Protected by GaneGan clean InnerTube audio engine.
           </Text>
         </CardFooter>
-      </Card>
-    </Box>
+    </AuthPageShell>
   );
 }
 

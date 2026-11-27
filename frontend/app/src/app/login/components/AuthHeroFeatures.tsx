@@ -18,10 +18,12 @@ export function AuthHeroFeatures({ mode }: AuthHeroFeaturesProps) {
         </CardTitle>
       </Flex>
 
-      <Flex align="center" gap="2" justify="center">
+      <Flex align="center" gap="2" justify="center" className="mt-1">
         <Badge variant="glass" size="sm">
-          <Sparkles size={11} className="mr-1 text-text-secondary" />
-          Ad-Free InnerTube Streaming
+          <Flex align="center" gap="1">
+            <Sparkles size={11} className="shrink-0 text-brand-primary" />
+            <span>Ad-Free InnerTube Streaming</span>
+          </Flex>
         </Badge>
       </Flex>
 

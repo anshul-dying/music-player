@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useYouTubeAuthStore } from '@/stores/youtubeAuthStore';
 import { useSpotifyImportStore } from '@/stores/spotifyImportStore';
 import { ConnectYouTubeModal } from '@/components/ConnectYouTubeModal';
+import { CreatePlaylistDialog } from '@/components/CreatePlaylistDialog';
 import { SpotifyImportModal } from '@/components/SpotifyImportModal';
 import { LibraryLikedCards } from './components/LibraryLikedCards';
 import { LibraryPlaylistsSection } from './components/LibraryPlaylistsSection';
@@ -21,6 +22,7 @@ import { LibraryRecentlyPlayed } from './components/LibraryRecentlyPlayed';
 
 export default function LibraryPage() {
   const [connectModalOpen, setConnectModalOpen] = useState(false);
+  const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false);
   const spotifyModalOpen = useSpotifyImportStore((s) => s.isModalOpen);
   const setSpotifyModalOpen = useSpotifyImportStore((s) => s.setModalOpen);
   const spotifyJob = useSpotifyImportStore((s) => s.job);
@@ -46,10 +48,7 @@ export default function LibraryPage() {
   }, [fetchLibrary, checkStatus]);
 
   const handleCreatePlaylist = () => {
-    const name = window.prompt('Playlist name:');
-    if (name) {
-      useLibraryStore.getState().createPlaylist(name);
-    }
+    setCreatePlaylistOpen(true);
   };
 
   return (
@@ -121,6 +120,11 @@ export default function LibraryPage() {
         open={spotifyModalOpen}
         onOpenChange={setSpotifyModalOpen}
         isAuthenticated={isAuthenticated}
+      />
+
+      <CreatePlaylistDialog
+        open={createPlaylistOpen}
+        onOpenChange={setCreatePlaylistOpen}
       />
     </Container>
   );

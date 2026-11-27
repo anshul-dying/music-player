@@ -24,6 +24,7 @@ import {
   Palette,
   Sparkles,
   EyeOff,
+  Settings,
 } from 'lucide-react';
 import { usePlayerStore } from '../../stores/playerStore';
 
@@ -104,6 +105,13 @@ export function ShellCommandPalette({
             onSelect={() => onNavigate('/library')}
           >
             Library
+          </CommandItem>
+          <CommandItem
+            icon={<Settings className="h-4 w-4" />}
+            keywords={['settings', 'preferences', 'audio', 'account']}
+            onSelect={() => onNavigate('/settings')}
+          >
+            Settings
           </CommandItem>
         </CommandGroup>
 
