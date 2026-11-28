@@ -6,9 +6,12 @@ import { CreatePlaylistDialog } from '../CreatePlaylistDialog';
 import { AddToPlaylistModal } from '../AddToPlaylistModal';
 import { AccountModal } from '../AccountModal';
 import { PlaybackOptionsModal } from '../PlaybackOptionsModal';
+import { SpotifyImportModal } from '../SpotifyImportModal';
 import { type Track } from '../../stores/playerStore';
 import { useLibraryStore, type Playlist } from '../../stores/libraryStore';
 import { useTrackActionsStore } from '../../stores/trackActionsStore';
+import { useSpotifyImportStore } from '../../stores/spotifyImportStore';
+import { useAuthStore } from '../../stores/authStore';
 
 export interface ShellModalsProps {
   isCreatePlaylistOpen: boolean;
@@ -31,6 +34,9 @@ export function ShellModals({
   const addToPlaylistTrack = useTrackActionsStore((s) => s.addToPlaylistTrack);
   const closeAddToPlaylist = useTrackActionsStore((s) => s.closeAddToPlaylist);
   const addTracksToPlaylist = useLibraryStore((s) => s.addTracksToPlaylist);
+  const spotifyModalOpen = useSpotifyImportStore((s) => s.isModalOpen);
+  const setSpotifyModalOpen = useSpotifyImportStore((s) => s.setModalOpen);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   // Track picked in "Add to playlist" before choosing "Create new playlist"; it goes into the new playlist.
   const [trackForNewPlaylist, setTrackForNewPlaylist] = useState<Track | null>(null);
 
@@ -74,6 +80,12 @@ export function ShellModals({
       <PlaybackOptionsModal
         open={isPlaybackOptionsOpen}
         onOpenChange={setIsPlaybackOptionsOpen}
+      />
+
+      <SpotifyImportModal
+        open={spotifyModalOpen}
+        onOpenChange={setSpotifyModalOpen}
+        isAuthenticated={isAuthenticated}
       />
     </>
   );
