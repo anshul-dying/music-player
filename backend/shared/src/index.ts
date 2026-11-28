@@ -92,3 +92,5 @@ export const lyricsResponseSchema = z.object({
   source: z.string(),
 });
 export type LyricsResponse = z.infer<typeof lyricsResponseSchema>;
+
+export * from "./profile.js";

@@ -107,13 +107,13 @@ export function ShellHeader({
         </Tooltip>
 
         {hasMounted && (isAuthenticated || ytAccount?.name) ? (
-          <Tooltip content={`Account: ${displayName}`}>
+          <Tooltip content={isAuthenticated ? `Profile: ${displayName}` : `Account: ${displayName}`}>
             <Avatar
               src={avatarSrc}
               fallback={(displayName || 'U')[0].toUpperCase()}
               size="sm"
-              aria-label={`User Account: ${displayName}`}
-              onClick={onOpenAccountModal}
+              aria-label={isAuthenticated ? `Profile: ${displayName}` : `User Account: ${displayName}`}
+              onClick={isAuthenticated ? () => router.push('/profile') : onOpenAccountModal}
               className="cursor-pointer select-none"
             />
           </Tooltip>

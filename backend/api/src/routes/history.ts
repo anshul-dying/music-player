@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { getDb, schema } from "@mp/db";
 import { desc, eq, sql } from "drizzle-orm";
 import { requireUser } from "./playlists.js";
+import { invalidateProfileStatsCache } from "./profile.js";
 import { historyBody, parseRequest } from "./schemas.js";
 
 export const historyRoutes: FastifyPluginAsync = async (app) => {
@@ -40,6 +41,7 @@ export const historyRoutes: FastifyPluginAsync = async (app) => {
           },
         });
     });
+    await invalidateProfileStatsCache(userId);
     return reply.status(201).send({ ok: true });
   });
 

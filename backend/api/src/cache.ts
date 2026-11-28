@@ -31,6 +31,7 @@ function memSet(key: string, value: string, ttlSeconds: number) {
 export interface Cache {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, ttlSeconds: number): Promise<void>;
+  del(key: string): Promise<void>;
 }
 
 export function createCache(): Cache {
@@ -39,6 +40,9 @@ export function createCache(): Cache {
     return {
       get: async (key) => memGet(key),
       set: async (key, value, ttl) => memSet(key, value, ttl),
+      del: async (key) => {
+        mem.delete(key);
+      },
     };
   }
 
@@ -57,6 +61,14 @@ export function createCache(): Cache {
         if (redis.status === "ready") await redis.set(key, value, "EX", ttl);
       } catch {
         /* memory copy already saved us */
+      }
+    },
+    del: async (key) => {
+      mem.delete(key);
+      try {
+        if (redis.status === "ready") await redis.del(key);
+      } catch {
+        /* memory copy already cleared */
       }
     },
   };
