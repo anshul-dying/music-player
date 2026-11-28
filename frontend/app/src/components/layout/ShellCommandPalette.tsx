@@ -15,6 +15,7 @@ import {
   Compass,
   Search,
   Library,
+  User,
   Play,
   Pause,
   SkipForward,
@@ -105,6 +106,13 @@ export function ShellCommandPalette({
             onSelect={() => onNavigate('/library')}
           >
             Library
+          </CommandItem>
+          <CommandItem
+            icon={<User className="h-4 w-4" />}
+            keywords={['profile', 'stats', 'analytics', 'heatmap', 'history']}
+            onSelect={() => onNavigate('/profile')}
+          >
+            Profile &amp; Stats
           </CommandItem>
           <CommandItem
             icon={<Settings className="h-4 w-4" />}

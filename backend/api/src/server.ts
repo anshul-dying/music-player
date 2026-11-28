@@ -13,6 +13,7 @@ import { lyricsRoutes } from "./routes/lyrics.js";
 import { importRoutes } from "./routes/import.js";
 import { spotifyAuthRoutes } from "./routes/spotifyAuth.js";
 import { accountRoutes } from "./routes/account.js";
+import { profileRoutes } from "./routes/profile.js";
 import {
   createCredentialRateLimiter,
   getRateLimitPluginOptions,
@@ -75,6 +76,7 @@ export async function buildServer(opts?: BuildServerOptions): Promise<FastifyIns
   await app.register(importRoutes, { prefix: "/api/import" });
   await app.register(spotifyAuthRoutes, { prefix: "/api/auth/spotify" });
   await app.register(accountRoutes, { prefix: "/api/account" });
+  await app.register(profileRoutes, { prefix: "/api/profile" });
 
   app.addHook("onClose", async () => {
     await closeImportQueue();
