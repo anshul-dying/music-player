@@ -21,7 +21,7 @@ jobs:
       - name: Trigger remote deployment via SSH
         env:
           SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          HOST: ${{ secrets.LIGHTSAIL_HOST || '35.154.36.24' }}
+          HOST: ${{ secrets.LIGHTSAIL_HOST || '43.204.82.8' }}
           USER: ${{ secrets.LIGHTSAIL_USER || 'ubuntu' }}
         run: |
           if [ -z "$SSH_KEY" ]; then
@@ -60,4 +60,4 @@ jobs:
             echo "--> Production status:"
             pm2 status
           EOF
-          echo "==> Deployment complete! Live at https://35.154.36.24.nip.io"
+          echo "==> Deployment complete! Live at https://43.204.82.8.nip.io"

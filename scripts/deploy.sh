@@ -2,7 +2,7 @@
 set -e
 
 KEY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/LightsailDefaultKey-ap-south-1.pem"
-REMOTE_HOST="35.154.36.24"
+REMOTE_HOST="43.204.82.8"
 REMOTE_USER="ubuntu"
 
 if [ ! -f "$KEY_PATH" ]; then
@@ -39,4 +39,4 @@ ssh -i "$KEY_PATH" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" 'bash
   pm2 status
 EOF
 
-echo "==> Deployment complete! Live at https://35.154.36.24.nip.io"
+echo "==> Deployment complete! Live at https://43.204.82.8.nip.io"
