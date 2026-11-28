@@ -1,8 +1,8 @@
 export const DEFAULT_APP_ORIGINS = [
   "http://localhost",
   "http://127.0.0.1",
-  "http://35.154.36.24.nip.io",
-  "https://35.154.36.24.nip.io",
+  "http://43.204.82.8.nip.io",
+  "https://43.204.82.8.nip.io",
 ] as const;
 
 const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);

@@ -11,7 +11,7 @@ import {
   toMatchPatterns,
 } from "../src/security/origins";
 
-const PROD = "https://35.154.36.24.nip.io";
+const PROD = "https://43.204.82.8.nip.io";
 const EXTENSION_ORIGIN = "chrome-extension://abcdefghijklmnop";
 
 describe("parseAppOrigins", () => {
@@ -43,14 +43,14 @@ describe("isAllowedOrigin", () => {
 
   it("allows the production host on https and http", () => {
     assert.equal(isAllowedOrigin(PROD, allowed), true);
-    assert.equal(isAllowedOrigin("http://35.154.36.24.nip.io", allowed), true);
+    assert.equal(isAllowedOrigin("http://43.204.82.8.nip.io", allowed), true);
   });
 
   it("rejects public wildcard hosting and look-alike hosts", () => {
     for (const origin of [
       "https://evil.nip.io",
-      "https://35.154.36.24.nip.io.evil.com",
-      "https://evil.35.154.36.24.nip.io",
+      "https://43.204.82.8.nip.io.evil.com",
+      "https://evil.43.204.82.8.nip.io",
       "https://evil.vercel.app",
       "https://evil.pages.dev",
       "http://localhost.evil.com",
@@ -62,8 +62,8 @@ describe("isAllowedOrigin", () => {
   });
 
   it("rejects the wrong scheme or port for non loopback hosts", () => {
-    assert.equal(isAllowedOrigin("https://35.154.36.24.nip.io:8443", allowed), false);
-    assert.equal(isAllowedOrigin("http://35.154.36.24.nip.io:8080", allowed), false);
+    assert.equal(isAllowedOrigin("https://43.204.82.8.nip.io:8443", allowed), false);
+    assert.equal(isAllowedOrigin("http://43.204.82.8.nip.io:8080", allowed), false);
   });
 
   it("rejects values that are not a bare origin", () => {
@@ -86,8 +86,8 @@ describe("toMatchPatterns", () => {
     assert.deepEqual(patterns, [
       "http://localhost/*",
       "http://127.0.0.1/*",
-      "http://35.154.36.24.nip.io/*",
-      "https://35.154.36.24.nip.io/*",
+      "http://43.204.82.8.nip.io/*",
+      "https://43.204.82.8.nip.io/*",
       "https://music.example.com/*",
     ]);
     assert.equal(patterns.some((p) => p.includes("*.") || p.includes("<all_urls>")), false);
@@ -97,7 +97,7 @@ describe("toMatchPatterns", () => {
 describe("originOf", () => {
   it("returns the origin for web and extension URLs", () => {
     assert.equal(originOf("http://localhost:3000/library?x=1"), "http://localhost:3000");
-    assert.equal(originOf("https://35.154.36.24.nip.io/"), PROD);
+    assert.equal(originOf("https://43.204.82.8.nip.io/"), PROD);
     assert.equal(originOf(`${EXTENSION_ORIGIN}/popup.html`), EXTENSION_ORIGIN);
     assert.equal(originOf("moz-extension://1234-abcd/"), "moz-extension://1234-abcd");
   });

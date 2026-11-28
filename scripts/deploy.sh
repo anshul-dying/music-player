@@ -26,6 +26,9 @@ ssh -i "$KEY_PATH" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" 'bash
   echo "--> Installing dependencies if needed..."
   pnpm install
 
+  echo "--> Applying database migrations..."
+  pnpm db:migrate
+
   echo "--> Packaging companion extension..."
   pnpm package:ext
 

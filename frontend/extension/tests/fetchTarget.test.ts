@@ -49,7 +49,7 @@ describe("parseFetchTarget", () => {
       "http://localhost:3000/",
       "http://127.0.0.1:5432/",
       "https://192.168.1.1.nip.io/",
-      "https://35.154.36.24.nip.io/",
+      "https://43.204.82.8.nip.io/",
       "https://example.com/",
       "not a url",
       "",
